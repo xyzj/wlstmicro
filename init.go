@@ -42,6 +42,9 @@ type rabbitConfigure struct {
 	pwd      string
 	vhost    string
 	exchange string
+	queue    string
+	durable  bool
+	autodel  bool
 	usetls   bool
 	enable   bool
 }

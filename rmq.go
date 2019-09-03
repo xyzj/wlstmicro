@@ -13,7 +13,10 @@ import (
 )
 
 var (
-	mqProducer *mq.Session
+	// MQProducer 生产者
+	MQProducer *mq.Session
+	// MQConsumer 消费者
+	MQConsumer *mq.Session
 )
 
 // NewMQProducer NewRabbitmqProducer
@@ -34,9 +37,9 @@ func NewMQProducer() {
 	if !rabbitConf.enable {
 		return
 	}
-	mqProducer = mq.NewProducer(rabbitConf.exchange, fmt.Sprintf("amqp://%s:%s@%s/%s", rabbitConf.user, rabbitConf.pwd, rabbitConf.addr, rabbitConf.vhost), false)
-	mqProducer.SetLogger(&sysLog.DefaultWriter, LogLevel)
-	go mqProducer.Start()
+	MQProducer = mq.NewProducer(rabbitConf.exchange, fmt.Sprintf("amqp://%s:%s@%s/%s", rabbitConf.user, rabbitConf.pwd, rabbitConf.addr, rabbitConf.vhost), false)
+	MQProducer.SetLogger(&sysLog.DefaultWriter, LogLevel)
+	go MQProducer.Start()
 	activeRmq = true
 }
 
@@ -45,7 +48,7 @@ func WriteRabbitMQ(key string, value []byte, expire time.Duration) {
 	if !activeRmq {
 		return
 	}
-	mqProducer.SendCustom(&mq.RabbitMQData{
+	MQProducer.SendCustom(&mq.RabbitMQData{
 		RoutingKey: key,
 		Data: &amqp.Publishing{
 			ContentType:  "text/plain",
@@ -55,6 +58,9 @@ func WriteRabbitMQ(key string, value []byte, expire time.Duration) {
 			Body:         value,
 		},
 	})
+	if LogLevel >= 20 {
+		WriteLog("MQ", "S:"+key+"|"+mq.FormatMQBody(value), 20)
+	}
 }
 
 // PubEvent 事件id，状态，过滤器，用户名，详细，来源ip，额外数据
@@ -70,5 +76,32 @@ func PubEvent(eventid, status int, key, username, detail, from, jsdata string) {
 
 // ProducerIsReady 返回ProducerIsReady可用状态
 func ProducerIsReady() bool {
-	return mqProducer != nil
+	return MQProducer != nil
+}
+
+// NewMQConsumer NewMQConsumer
+func NewMQConsumer() {
+	if AppConf == nil {
+		WriteLog("SYS", "Configuration files should be loaded first", 40)
+		return
+	}
+	rabbitConf.addr = AppConf.GetItemDefault("mq_addr", "127.0.0.1:5672", "mq服务地址,ip:port格式")
+	rabbitConf.user = AppConf.GetItemDefault("mq_user", "arx7", "mq连接用户名")
+	rabbitConf.pwd = gopsu.DecodeString(AppConf.GetItemDefault("mq_pwd", "WcELCNqP5dCpvMmMbKDdvgb", "mq连接密码"))
+	rabbitConf.vhost = AppConf.GetItemDefault("mq_vhost", "", "mq虚拟域名")
+	rabbitConf.exchange = AppConf.GetItemDefault("mq_exchange", "luwak_topic", "mq交换机名称")
+	rabbitConf.queue = AppConf.GetItemDefault("mq_queue", "abc", "mq队列名称")
+	rabbitConf.durable, _ = strconv.ParseBool(AppConf.GetItemDefault("mq_durable", "true", "队列是否持久化"))
+	rabbitConf.autodel, _ = strconv.ParseBool(AppConf.GetItemDefault("mq_autodel", "true", "队列在未使用时是否删除"))
+	rabbitConf.enable, _ = strconv.ParseBool(AppConf.GetItemDefault("mq_enable", "true", "是否启用rabbitmq"))
+	if rabbitConf.usetls {
+		rabbitConf.addr = strings.Replace(rabbitConf.addr, "5672", "5671", 1)
+	}
+	if !rabbitConf.enable {
+		return
+	}
+	MQConsumer = mq.NewConsumer(rabbitConf.exchange, fmt.Sprintf("amqp://%s:%s@%s/%s", rabbitConf.user, rabbitConf.pwd, rabbitConf.addr, rabbitConf.vhost), rabbitConf.queue, rabbitConf.durable, rabbitConf.autodel, false)
+	MQConsumer.SetLogger(&sysLog.DefaultWriter, LogLevel)
+	go MQConsumer.Start()
+	activeRmq = true
 }
