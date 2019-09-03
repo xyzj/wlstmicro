@@ -18,17 +18,17 @@ var (
 
 // NewMQProducer NewRabbitmqProducer
 func NewMQProducer() {
-	if appConf == nil {
-		writeLog("SYS", "Configuration files should be loaded first", 40)
+	if AppConf == nil {
+		WriteLog("SYS", "Configuration files should be loaded first", 40)
 		return
 	}
-	rabbitConf.addr = appConf.GetItemDefault("mq_addr", "127.0.0.1:5672", "mq服务地址,ip:port格式")
-	rabbitConf.user = appConf.GetItemDefault("mq_user", "arx7", "mq连接用户名")
-	rabbitConf.pwd = gopsu.DecodeString(appConf.GetItemDefault("mq_pwd", "WcELCNqP5dCpvMmMbKDdvgb", "mq连接密码"))
-	rabbitConf.vhost = appConf.GetItemDefault("mq_vhost", "", "mq虚拟域名")
-	rabbitConf.exchange = appConf.GetItemDefault("mq_exchange", "luwak_topic", "mq交换机名称")
-	if !standAloneMode {
-		rabbitConf.enable, _ = strconv.ParseBool(appConf.GetItemDefault("mq_enable", "true", "是否启用rabbitmq"))
+	rabbitConf.addr = AppConf.GetItemDefault("mq_addr", "127.0.0.1:5672", "mq服务地址,ip:port格式")
+	rabbitConf.user = AppConf.GetItemDefault("mq_user", "arx7", "mq连接用户名")
+	rabbitConf.pwd = gopsu.DecodeString(AppConf.GetItemDefault("mq_pwd", "WcELCNqP5dCpvMmMbKDdvgb", "mq连接密码"))
+	rabbitConf.vhost = AppConf.GetItemDefault("mq_vhost", "", "mq虚拟域名")
+	rabbitConf.exchange = AppConf.GetItemDefault("mq_exchange", "luwak_topic", "mq交换机名称")
+	if !StandAloneMode {
+		rabbitConf.enable, _ = strconv.ParseBool(AppConf.GetItemDefault("mq_enable", "true", "是否启用rabbitmq"))
 	}
 	if rabbitConf.usetls {
 		rabbitConf.addr = strings.Replace(rabbitConf.addr, "5672", "5671", 1)
@@ -36,13 +36,14 @@ func NewMQProducer() {
 	if !rabbitConf.enable {
 		return
 	}
-	mqProducer = mq.NewProducer(rabbitConf.exchange, fmt.Sprintf("amqp://%s:%s@%s/%s", rabbitConf.user, rabbitConf.pwd, rabbitConf.addr, rabbitConf.vhost), EnableDebug)
+	mqProducer = mq.NewProducer(rabbitConf.exchange, fmt.Sprintf("amqp://%s:%s@%s/%s", rabbitConf.user, rabbitConf.pwd, rabbitConf.addr, rabbitConf.vhost), false)
 	mqProducer.SetLogger(&sysLog.DefaultWriter, LogLevel)
 	go mqProducer.Start()
 	activeRmq = true
 }
 
-func writeRabbitMQ(key string, value []byte, expire time.Duration) {
+// WriteRabbitMQ 写mq
+func WriteRabbitMQ(key string, value []byte, expire time.Duration) {
 	if !activeRmq {
 		return
 	}
@@ -58,15 +59,15 @@ func writeRabbitMQ(key string, value []byte, expire time.Duration) {
 	})
 }
 
-// pubEvent 事件id，状态，过滤器，用户名，详细，来源ip，额外数据
-func pubEvent(eventid, status int, key, username, detail, from, jsdata string) {
+// PubEvent 事件id，状态，过滤器，用户名，详细，来源ip，额外数据
+func PubEvent(eventid, status int, key, username, detail, from, jsdata string) {
 	js, _ := sjson.Set("", "time", time.Now().Unix())
 	js, _ = sjson.Set(js, "event_id", eventid)
 	js, _ = sjson.Set(js, "username", username)
 	js, _ = sjson.Set(js, "detail", detail)
 	js, _ = sjson.Set(js, "from", from)
 	js, _ = sjson.Set(js, "status", status)
-	writeRabbitMQ(key, []byte(js), time.Minute*10)
+	WriteRabbitMQ(key, []byte(js), time.Minute*10)
 }
 
 // ProducerIsReady 返回ProducerIsReady可用状态

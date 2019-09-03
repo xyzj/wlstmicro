@@ -10,21 +10,22 @@ import (
 )
 
 var (
-	redisClient *redis.Client
+	// RedisClient redis客户端
+	RedisClient *redis.Client
 )
 
 // NewRedisClient 新的redis client
 func NewRedisClient() {
-	if appConf == nil {
-		writeLog("SYS", "Configuration files should be loaded first", 40)
+	if AppConf == nil {
+		WriteLog("SYS", "Configuration files should be loaded first", 40)
 		return
 	}
 
-	redisConf.addr = appConf.GetItemDefault("redis_addr", "127.0.0.1:6379", "redis服务地址,ip:port格式")
-	redisConf.pwd = gopsu.DecodeString(appConf.GetItemDefault("redis_pwd", "WcELCNqP5dCpvMmMbKDdvgb", "redis连接密码"))
-	redisConf.database, _ = strconv.Atoi(appConf.GetItemDefault("redis_db", "0", "redis数据库名称"))
-	if !standAloneMode {
-		redisConf.enable, _ = strconv.ParseBool(appConf.GetItemDefault("redis_enable", "true", "是否启用redis"))
+	redisConf.addr = AppConf.GetItemDefault("redis_addr", "127.0.0.1:6379", "redis服务地址,ip:port格式")
+	redisConf.pwd = gopsu.DecodeString(AppConf.GetItemDefault("redis_pwd", "WcELCNqP5dCpvMmMbKDdvgb", "redis连接密码"))
+	redisConf.database, _ = strconv.Atoi(AppConf.GetItemDefault("redis_db", "0", "redis数据库名称"))
+	if !StandAloneMode {
+		redisConf.enable, _ = strconv.ParseBool(AppConf.GetItemDefault("redis_enable", "true", "是否启用redis"))
 	}
 
 	if !redisConf.enable {
@@ -32,44 +33,47 @@ func NewRedisClient() {
 	}
 	var err error
 
-	redisClient = redis.NewClient(&redis.Options{
+	RedisClient = redis.NewClient(&redis.Options{
 		Addr:     redisConf.addr,
 		Password: redisConf.pwd,
 		DB:       redisConf.database,
 	})
-	_, err = redisClient.Ping().Result()
+	_, err = RedisClient.Ping().Result()
 	if err != nil {
-		writeLog("REDIS", "Failed connect to server "+redisConf.addr+"|"+err.Error(), 40)
+		WriteLog("REDIS", "Failed connect to server "+redisConf.addr+"|"+err.Error(), 40)
 		return
 	}
 	activeRedis = true
-	writeLog("REDIS", "Success connect to server "+redisConf.addr, 90)
+	WriteLog("REDIS", "Success connect to server "+redisConf.addr, 90)
 }
 
-func writeRedis(key string, value interface{}, expire time.Duration) {
-	if redisClient == nil {
+// WriteRedis 写redis
+func WriteRedis(key string, value interface{}, expire time.Duration) {
+	if RedisClient == nil {
 		return
 	}
-	err := redisClient.Set(key, value, expire).Err()
+	err := RedisClient.Set(key, value, expire).Err()
 	if err != nil {
-		writeLog("REDIS", "Failed write redis data: "+err.Error(), 40)
+		WriteLog("REDIS", "Failed write redis data: "+err.Error(), 40)
 	}
 }
 
-func eraseRedis(key ...string) {
-	if redisClient == nil {
+// EraseRedis 删redis
+func EraseRedis(key ...string) {
+	if RedisClient == nil {
 		return
 	}
-	redisClient.Del(key...)
+	RedisClient.Del(key...)
 }
 
-func readRedis(key string) (string, error) {
-	if redisClient == nil {
+// ReadRedis 读redis
+func ReadRedis(key string) (string, error) {
+	if RedisClient == nil {
 		return "", fmt.Errorf("redis is not ready")
 	}
-	val := redisClient.Get(key)
+	val := RedisClient.Get(key)
 	if val.Err() != nil {
-		writeLog("REDIS", "Failed read redis data: "+key+"|"+val.Err().Error(), 40)
+		WriteLog("REDIS", "Failed read redis data: "+key+"|"+val.Err().Error(), 40)
 		return "", val.Err()
 	}
 	return val.Val(), nil
@@ -77,5 +81,5 @@ func readRedis(key string) (string, error) {
 
 // RedisIsReady 返回redis可用状态
 func RedisIsReady() bool {
-	return redisClient != nil
+	return RedisClient != nil
 }

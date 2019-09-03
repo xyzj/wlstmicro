@@ -9,9 +9,9 @@ import (
 )
 
 type tlsFiles struct {
-	cert     string
-	key      string
-	clientCA string
+	Cert     string
+	Key      string
+	ClientCA string
 }
 
 type mysqlConfigure struct {
@@ -48,25 +48,25 @@ type rabbitConfigure struct {
 
 // 本地变量
 var (
-	standAloneMode = gopsu.IsExist(".standalone")
+	StandAloneMode = gopsu.IsExist(".standalone")
 
-	etcdTLS = &tlsFiles{
-		cert:     filepath.Join(gopsu.DefaultConfDir, "ca", "etcd.pem"),
-		key:      filepath.Join(gopsu.DefaultConfDir, "ca", "etcd-key.pem"),
-		clientCA: filepath.Join(gopsu.DefaultConfDir, "ca", "rootca.pem"),
+	ETCDTLS = &tlsFiles{
+		Cert:     filepath.Join(gopsu.DefaultConfDir, "ca", "etcd.pem"),
+		Key:      filepath.Join(gopsu.DefaultConfDir, "ca", "etcd-key.pem"),
+		ClientCA: filepath.Join(gopsu.DefaultConfDir, "ca", "rootca.pem"),
 	}
-	httpTLS = &tlsFiles{
-		cert:     filepath.Join(gopsu.DefaultConfDir, "ca", "http.pem"),
-		key:      filepath.Join(gopsu.DefaultConfDir, "ca", "http-key.pem"),
-		clientCA: filepath.Join(gopsu.DefaultConfDir, "ca", "rootca.pem"),
+	HTTPTLS = &tlsFiles{
+		Cert:     filepath.Join(gopsu.DefaultConfDir, "ca", "http.pem"),
+		Key:      filepath.Join(gopsu.DefaultConfDir, "ca", "http-key.pem"),
+		ClientCA: filepath.Join(gopsu.DefaultConfDir, "ca", "rootca.pem"),
 	}
-	grpcTLS = &tlsFiles{
-		cert:     filepath.Join(gopsu.DefaultConfDir, "ca", "grpc.pem"),
-		key:      filepath.Join(gopsu.DefaultConfDir, "ca", "grpc-key.pem"),
-		clientCA: filepath.Join(gopsu.DefaultConfDir, "ca", "rootca.pem"),
+	GRPCTLS = &tlsFiles{
+		Cert:     filepath.Join(gopsu.DefaultConfDir, "ca", "grpc.pem"),
+		Key:      filepath.Join(gopsu.DefaultConfDir, "ca", "grpc-key.pem"),
+		ClientCA: filepath.Join(gopsu.DefaultConfDir, "ca", "rootca.pem"),
 	}
 
-	appConf    *gopsu.ConfData
+	AppConf    *gopsu.ConfData
 	mysqlConf  = &mysqlConfigure{}
 	redisConf  = &redisConfigure{}
 	etcdConf   = &etcdConfigure{}
@@ -83,15 +83,21 @@ var (
 	activeETCD  bool
 )
 
-// InitConfigure 初始化配置
-func InitConfigure(f string, p, l int) {
-	appConf, _ = gopsu.LoadConfig(f)
+// LoadConfigure 初始化配置
+// f：配置文件路径，p：http端口，l：日志等级
+// clientca：客户端ca路径（可选）
+func LoadConfigure(f string, p, l int, clientca ...string) {
+	AppConf, _ = gopsu.LoadConfig(f)
 	MainPort = p
 	LogLevel = l
 	sysLog = gopsu.NewLogger(gopsu.DefaultLogDir, "sys"+strconv.Itoa(p))
+	if len(clientca) > 0 {
+		HTTPTLS.ClientCA = clientca[0]
+	}
 }
 
-func writeLog(name, msg string, level int) {
+// WriteLog 写公共日志
+func WriteLog(name, msg string, level int) {
 	if sysLog == nil {
 		println(fmt.Sprintf("[%s] %s", name, msg))
 	} else {
