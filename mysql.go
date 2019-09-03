@@ -22,9 +22,7 @@ func NewMysqlClient(mark string) {
 	mysqlConf.user = AppConf.GetItemDefault("db_user", "root", "mysql用户名")
 	mysqlConf.pwd = gopsu.DecodeString(AppConf.GetItemDefault("db_pwd", "SsWAbSy8H1EOP3n5LdUQqls", "mysql密码"))
 	mysqlConf.database = AppConf.GetItemDefault("db_name", "mydb1024", "mysql数据库名称")
-	if !StandAloneMode {
-		mysqlConf.enable, _ = strconv.ParseBool(AppConf.GetItemDefault("db_enable", "true", "是否启用mysql"))
-	}
+	mysqlConf.enable, _ = strconv.ParseBool(AppConf.GetItemDefault("db_enable", "true", "是否启用mysql"))
 
 	if !mysqlConf.enable {
 		return

@@ -21,9 +21,7 @@ func NewETCDClient(svrName, svrType, svrProtocol string) {
 	etcdConf.addr = AppConf.GetItemDefault("etcd_addr", "127.0.0.1:2379", "etcd服务地址,ip:port格式")
 	etcdConf.usetls, _ = strconv.ParseBool(AppConf.GetItemDefault("etcd_tls", "false", "是否使用证书连接etcd服务"))
 	etcdConf.regAddr = AppConf.GetItemDefault("etcd_reg", "127.0.0.1", "服务注册地址,ip[:port]格式，不指定port时，自动使用http启动参数的端口")
-	if !StandAloneMode {
-		etcdConf.enable, _ = strconv.ParseBool(AppConf.GetItemDefault("etcd_enable", "true", "是否启用etcd"))
-	}
+	etcdConf.enable, _ = strconv.ParseBool(AppConf.GetItemDefault("etcd_enable", "true", "是否启用etcd"))
 	if etcdConf.usetls {
 		etcdConf.addr = strings.Replace(etcdConf.addr, "2379", "2378", 1)
 	}
