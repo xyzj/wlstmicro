@@ -89,14 +89,12 @@ var (
 // LoadConfigure 初始化配置
 // f：配置文件路径，p：http端口，l：日志等级
 // clientca：客户端ca路径（可选）
-func LoadConfigure(f string, p, l int, clientca ...string) {
+func LoadConfigure(f string, p, l int, clientca string) {
 	AppConf, _ = gopsu.LoadConfig(f)
 	MainPort = p
 	LogLevel = l
 	sysLog = gopsu.NewLogger(gopsu.DefaultLogDir, "sys"+strconv.Itoa(p))
-	if len(clientca) > 0 {
-		HTTPTLS.ClientCA = clientca[0]
-	}
+	HTTPTLS.ClientCA = clientca
 }
 
 // WriteLog 写公共日志
