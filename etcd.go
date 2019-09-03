@@ -54,3 +54,8 @@ func NewETCDClient(svrName, svrType, svrProtocol string) {
 	// 获取服务列表信息
 	etcdClient.Watcher()
 }
+
+// ETCDIsReady 返回ETCD可用状态
+func ETCDIsReady() bool {
+	return etcdClient != nil
+}

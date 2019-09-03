@@ -74,3 +74,8 @@ func readRedis(key string) (string, error) {
 	}
 	return val.Val(), nil
 }
+
+// RedisIsReady 返回redis可用状态
+func RedisIsReady() bool {
+	return redisClient != nil
+}

@@ -68,3 +68,8 @@ func pubEvent(eventid, status int, key, username, detail, from, jsdata string) {
 	js, _ = sjson.Set(js, "status", status)
 	writeRabbitMQ(key, []byte(js), time.Minute*10)
 }
+
+// ProducerIsReady 返回ProducerIsReady可用状态
+func ProducerIsReady() bool {
+	return mqProducer != nil
+}

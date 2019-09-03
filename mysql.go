@@ -39,3 +39,8 @@ func NewMysqlClient(mark string) {
 
 	mysqlClient.ConfigCache(gopsu.DefaultCacheDir, "um"+mark, 30)
 }
+
+// MysqlIsReady 返回mysql可用状态
+func MysqlIsReady() bool {
+	return mysqlConf != nil
+}
