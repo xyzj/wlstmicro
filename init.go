@@ -94,6 +94,7 @@ func LoadConfigure(f string, p, l int, clientca string) {
 	MainPort = p
 	LogLevel = l
 	sysLog = gopsu.NewLogger(gopsu.DefaultLogDir, "sys"+strconv.Itoa(p))
+	sysLog.SetLogLevel(l)
 	HTTPTLS.ClientCA = clientca
 }
 
