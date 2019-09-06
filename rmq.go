@@ -6,10 +6,11 @@ import (
 	"strings"
 	"time"
 
+	"mq"
+
 	"github.com/streadway/amqp"
 	"github.com/tidwall/sjson"
 	"github.com/xyzj/gopsu"
-	"github.com/xyzj/gopsu/mq"
 )
 
 var (

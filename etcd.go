@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/xyzj/gopsu/microgo"
+	"microgo"
 )
 
 var (

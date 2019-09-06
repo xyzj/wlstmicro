@@ -3,8 +3,9 @@ package wlstmicro
 import (
 	"strconv"
 
+	"db"
+
 	"github.com/xyzj/gopsu"
-	"github.com/xyzj/gopsu/db"
 )
 
 var (
