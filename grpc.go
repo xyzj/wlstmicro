@@ -1,4 +1,4 @@
-package microgo
+package wlstmicro
 
 import (
 	"context"
