@@ -1,5 +1,9 @@
 # changelog
 
+## [2019-09-09]
+
+- 使用vendor管理gopsu包
+
 ## [2019-09-03]
 
 - init

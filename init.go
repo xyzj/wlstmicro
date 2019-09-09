@@ -2,6 +2,7 @@ package wlstmicro
 
 import (
 	"fmt"
+	"io/ioutil"
 	"path/filepath"
 	"strconv"
 
@@ -52,23 +53,11 @@ type rabbitConfigure struct {
 // 本地变量
 var (
 	StandAloneMode = gopsu.IsExist(".standalone")
+	baseCAPath     = filepath.Join(gopsu.DefaultConfDir, "ca")
 
-	ETCDTLS = &tlsFiles{
-		Cert:     filepath.Join(gopsu.DefaultConfDir, "ca", "etcd.pem"),
-		Key:      filepath.Join(gopsu.DefaultConfDir, "ca", "etcd-key.pem"),
-		ClientCA: filepath.Join(gopsu.DefaultConfDir, "ca", "rootca.pem"),
-	}
-	HTTPTLS = &tlsFiles{
-		Cert:     filepath.Join(gopsu.DefaultConfDir, "ca", "http.pem"),
-		Key:      filepath.Join(gopsu.DefaultConfDir, "ca", "http-key.pem"),
-		ClientCA: filepath.Join(gopsu.DefaultConfDir, "ca", "rootca.pem"),
-	}
-	GRPCTLS = &tlsFiles{
-		Cert:     filepath.Join(gopsu.DefaultConfDir, "ca", "grpc.pem"),
-		Key:      filepath.Join(gopsu.DefaultConfDir, "ca", "grpc-key.pem"),
-		ClientCA: filepath.Join(gopsu.DefaultConfDir, "ca", "rootca.pem"),
-	}
-
+	ETCDTLS    *tlsFiles
+	HTTPTLS    *tlsFiles
+	GRPCTLS    *tlsFiles
 	AppConf    *gopsu.ConfData
 	mysqlConf  = &mysqlConfigure{}
 	redisConf  = &redisConfigure{}
@@ -85,6 +74,28 @@ var (
 	activeRmq   bool
 	activeETCD  bool
 )
+
+func init() {
+	if a, err := ioutil.ReadFile(".capath"); err == nil {
+		baseCAPath = gopsu.DecodeString(string(a))
+	}
+
+	ETCDTLS = &tlsFiles{
+		Cert:     filepath.Join(baseCAPath, "etcd.pem"),
+		Key:      filepath.Join(baseCAPath, "etcd-key.pem"),
+		ClientCA: filepath.Join(baseCAPath, "rootca.pem"),
+	}
+	HTTPTLS = &tlsFiles{
+		Cert:     filepath.Join(baseCAPath, "http.pem"),
+		Key:      filepath.Join(baseCAPath, "http-key.pem"),
+		ClientCA: filepath.Join(baseCAPath, "rootca.pem"),
+	}
+	GRPCTLS = &tlsFiles{
+		Cert:     filepath.Join(baseCAPath, "grpc.pem"),
+		Key:      filepath.Join(baseCAPath, "grpc-key.pem"),
+		ClientCA: filepath.Join(baseCAPath, "rootca.pem"),
+	}
+}
 
 // LoadConfigure 初始化配置
 // f：配置文件路径，p：http端口，l：日志等级

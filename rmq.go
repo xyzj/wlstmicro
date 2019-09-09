@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"mq"
+	"github.com/xyzj/gopsu/mq"
 
 	"github.com/streadway/amqp"
 	"github.com/tidwall/sjson"

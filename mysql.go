@@ -3,7 +3,7 @@ package wlstmicro
 import (
 	"strconv"
 
-	"db"
+	"github.com/xyzj/gopsu/db"
 
 	"github.com/xyzj/gopsu"
 )
