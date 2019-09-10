@@ -18,28 +18,35 @@ func NewMysqlClient(mark string) {
 		WriteLog("SYS", "Configuration files should be loaded first", 40)
 		return
 	}
-	mysqlConf.addr = AppConf.GetItemDefault("db_addr", "127.0.0.1:3306", "mysql服务地址,ip:port格式")
-	mysqlConf.user = AppConf.GetItemDefault("db_user", "root", "mysql用户名")
-	mysqlConf.pwd = gopsu.DecodeString(AppConf.GetItemDefault("db_pwd", "SsWAbSy8H1EOP3n5LdUQqls", "mysql密码"))
-	mysqlConf.database = AppConf.GetItemDefault("db_name", "mydb1024", "mysql数据库名称")
-	mysqlConf.enable, _ = strconv.ParseBool(AppConf.GetItemDefault("db_enable", "true", "是否启用mysql"))
+	dbConf.addr = AppConf.GetItemDefault("db_addr", "127.0.0.1:3306", "sql服务地址,ip[:port[/instance]]格式")
+	dbConf.user = AppConf.GetItemDefault("db_user", "root", "sql用户名")
+	dbConf.pwd = gopsu.DecodeString(AppConf.GetItemDefault("db_pwd", "SsWAbSy8H1EOP3n5LdUQqls", "sql密码"))
+	dbConf.database = AppConf.GetItemDefault("db_name", "mydb1024", "sql数据库名称")
+	dbConf.driver = AppConf.GetItemDefault("db_drive", "mysql", "sql数据库驱动，mysql 或 mssql")
+	dbConf.enable, _ = strconv.ParseBool(AppConf.GetItemDefault("db_enable", "true", "是否启用sql"))
 
-	if !mysqlConf.enable {
+	if !dbConf.enable {
 		return
 	}
 	var err error
-	MysqlClient, err = db.GetNewDBPool(mysqlConf.user, mysqlConf.pwd, mysqlConf.addr, mysqlConf.database, 10, true, 30)
+	switch dbConf.driver {
+	case "mssql":
+		db.SetDBDriver(db.DriverMSSQL)
+	default:
+		db.SetDBDriver(db.DriverMYSQL)
+	}
+	MysqlClient, err = db.GetNewDBPool(dbConf.user, dbConf.pwd, dbConf.addr, dbConf.database, 10, true, 30)
 	if err != nil {
-		WriteLog("SQL", "Failed connect to server "+mysqlConf.addr+"|"+err.Error(), 40)
+		WriteLog("SQL", "Failed connect to server "+dbConf.addr+"|"+err.Error(), 40)
 		return
 	}
 	activeMysql = true
-	WriteLog("SQL", "Success connect to server "+mysqlConf.addr, 90)
+	WriteLog("SQL", "Success connect to server "+dbConf.addr, 90)
 
 	MysqlClient.ConfigCache(gopsu.DefaultCacheDir, "um"+mark, 30)
 }
 
 // MysqlIsReady 返回mysql可用状态
 func MysqlIsReady() bool {
-	return mysqlConf != nil
+	return dbConf != nil
 }

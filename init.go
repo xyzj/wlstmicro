@@ -15,11 +15,12 @@ type tlsFiles struct {
 	ClientCA string
 }
 
-type mysqlConfigure struct {
+type dbConfigure struct {
 	addr     string
 	user     string
 	pwd      string
 	database string
+	driver   string
 	enable   bool
 }
 
@@ -59,7 +60,7 @@ var (
 	HTTPTLS    *tlsFiles
 	GRPCTLS    *tlsFiles
 	AppConf    *gopsu.ConfData
-	mysqlConf  = &mysqlConfigure{}
+	dbConf     = &dbConfigure{}
 	redisConf  = &redisConfigure{}
 	etcdConf   = &etcdConfigure{}
 	rabbitConf = &rabbitConfigure{}
