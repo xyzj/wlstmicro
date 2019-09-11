@@ -41,7 +41,16 @@ func NewMQProducer() {
 	}
 	MQProducer = mq.NewProducer(rabbitConf.exchange, fmt.Sprintf("amqp://%s:%s@%s/%s", rabbitConf.user, rabbitConf.pwd, rabbitConf.addr, rabbitConf.vhost), false)
 	MQProducer.SetLogger(&sysLog.DefaultWriter, LogLevel)
-	go MQProducer.Start()
+	if rabbitConf.usetls {
+		tc, err := gopsu.GetClientTLSConfig(RMQTLS.Cert, RMQTLS.Key, RMQTLS.ClientCA)
+		if err != nil {
+			WriteLog("MQ", "RabbitMQ TLS Error: "+err.Error(), 40)
+			return
+		}
+		go MQProducer.StartTLS(tc)
+	} else {
+		go MQProducer.Start()
+	}
 	activeRmq = true
 }
 

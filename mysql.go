@@ -23,6 +23,7 @@ func NewMysqlClient(mark string) {
 	dbConf.pwd = gopsu.DecodeString(AppConf.GetItemDefault("db_pwd", "SsWAbSy8H1EOP3n5LdUQqls", "sql密码"))
 	dbConf.database = AppConf.GetItemDefault("db_name", "mydb1024", "sql数据库名称")
 	dbConf.driver = AppConf.GetItemDefault("db_drive", "mysql", "sql数据库驱动，mysql 或 mssql")
+	// dbConf.usetls, _ = strconv.ParseBool(AppConf.GetItemDefault("etcd_tls", "false", "是否使用证书连接sql服务"))
 	dbConf.enable, _ = strconv.ParseBool(AppConf.GetItemDefault("db_enable", "true", "是否启用sql"))
 
 	if !dbConf.enable {

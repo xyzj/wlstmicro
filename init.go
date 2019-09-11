@@ -22,6 +22,7 @@ type dbConfigure struct {
 	database string
 	driver   string
 	enable   bool
+	usetls   bool
 }
 
 type etcdConfigure struct {
@@ -59,6 +60,7 @@ var (
 	ETCDTLS    *tlsFiles
 	HTTPTLS    *tlsFiles
 	GRPCTLS    *tlsFiles
+	RMQTLS     *tlsFiles
 	AppConf    *gopsu.ConfData
 	dbConf     = &dbConfigure{}
 	redisConf  = &redisConfigure{}
@@ -94,6 +96,11 @@ func init() {
 	GRPCTLS = &tlsFiles{
 		Cert:     filepath.Join(baseCAPath, "grpc.pem"),
 		Key:      filepath.Join(baseCAPath, "grpc-key.pem"),
+		ClientCA: filepath.Join(baseCAPath, "rootca.pem"),
+	}
+	RMQTLS = &tlsFiles{
+		Cert:     filepath.Join(baseCAPath, "rmq.pem"),
+		Key:      filepath.Join(baseCAPath, "rmq-key.pem"),
 		ClientCA: filepath.Join(baseCAPath, "rootca.pem"),
 	}
 }
