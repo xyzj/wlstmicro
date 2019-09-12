@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/xyzj/gopsu"
 )
@@ -109,6 +110,9 @@ func init() {
 // f：配置文件路径，p：http端口，l：日志等级
 // clientca：客户端ca路径（可选）
 func LoadConfigure(f string, p, l int, clientca string) {
+	if !strings.ContainsAny(f, "\\/") {
+		f = filepath.Join(gopsu.DefaultConfDir, f)
+	}
 	AppConf, _ = gopsu.LoadConfig(f)
 	MainPort = p
 	LogLevel = l
