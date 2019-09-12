@@ -112,7 +112,9 @@ func NewMQConsumer() {
 		return
 	}
 	MQConsumer = mq.NewConsumer(rabbitConf.exchange, fmt.Sprintf("amqp://%s:%s@%s/%s", rabbitConf.user, rabbitConf.pwd, rabbitConf.addr, rabbitConf.vhost), rabbitConf.queue, rabbitConf.durable, rabbitConf.autodel, false)
-	MQConsumer.SetLogger(&sysLog.DefaultWriter, LogLevel)
+	if sysLog != nil {
+		MQConsumer.SetLogger(&sysLog.DefaultWriter, LogLevel)
+	}
 	go MQConsumer.Start()
 	activeRmq = true
 }

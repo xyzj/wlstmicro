@@ -121,12 +121,43 @@ func LoadConfigure(f string, p, l int, clientca string) {
 	HTTPTLS.ClientCA = clientca
 }
 
+// WriteDebug debug日志
+func WriteDebug(name, msg string) {
+	WriteLog(name, msg, 10)
+}
+
+// WriteInfo debug日志
+func WriteInfo(name, msg string) {
+	WriteLog(name, msg, 10)
+}
+
+// WriteWarning debug日志
+func WriteWarning(name, msg string) {
+	WriteLog(name, msg, 10)
+}
+
+// WriteError debug日志
+func WriteError(name, msg string) {
+	WriteLog(name, msg, 10)
+}
+
 // WriteLog 写公共日志
+// name： 日志类别，如sys，mq，db这种
+// msg： 日志信息
+// level： 日志级别10,20，30,40,90
 func WriteLog(name, msg string, level int) {
-	if sysLog == nil {
-		println(fmt.Sprintf("[%s] %s", name, msg))
+	if name == "" {
+		if sysLog == nil {
+			println(fmt.Sprintf("%s", msg))
+		} else {
+			sysLog.WriteLog(fmt.Sprintf("%s", msg), level)
+		}
 	} else {
-		sysLog.WriteLog(fmt.Sprintf("[%s] %s", name, msg), level)
+		if sysLog == nil {
+			println(fmt.Sprintf("[%s] %s", name, msg))
+		} else {
+			sysLog.WriteLog(fmt.Sprintf("[%s] %s", name, msg), level)
+		}
 	}
 	// switch level {
 	// case 10:

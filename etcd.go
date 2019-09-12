@@ -40,7 +40,9 @@ func NewETCDClient(svrName, svrType, svrProtocol string) {
 		return
 	}
 	activeETCD = true
-	etcdClient.SetLogger(&sysLog.DefaultWriter, LogLevel)
+	if sysLog != nil {
+		etcdClient.SetLogger(&sysLog.DefaultWriter, LogLevel)
+	}
 
 	// 注册自身
 	a := strings.Split(etcdConf.regAddr, ":")
