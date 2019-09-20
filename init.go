@@ -141,6 +141,11 @@ func WriteError(name, msg string) {
 	WriteLog(name, msg, 10)
 }
 
+// WriteSystem debug日志
+func WriteSystem(name, msg string) {
+	WriteLog(name, msg, 90)
+}
+
 // WriteLog 写公共日志
 // name： 日志类别，如sys，mq，db这种
 // msg： 日志信息
