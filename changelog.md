@@ -4,6 +4,11 @@
 
 - rabbitmq增加ssl支持
 
+## [2019-09-30]
+
+- 增加EraseAllRedis方法
+- WriteRedis增加返回error
+
 ## [2019-09-09]
 
 - 使用vendor管理gopsu包

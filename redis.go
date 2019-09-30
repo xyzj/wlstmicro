@@ -46,14 +46,16 @@ func NewRedisClient() {
 }
 
 // WriteRedis 写redis
-func WriteRedis(key string, value interface{}, expire time.Duration) {
+func WriteRedis(key string, value interface{}, expire time.Duration) error {
 	if RedisClient == nil {
-		return
+		return fmt.Errorf("redis is not ready")
 	}
 	err := RedisClient.Set(key, value, expire).Err()
 	if err != nil {
 		WriteLog("REDIS", "Failed write redis data: "+err.Error(), 40)
+		return err
 	}
+	return nil
 }
 
 // EraseRedis 删redis
@@ -62,6 +64,18 @@ func EraseRedis(key ...string) {
 		return
 	}
 	RedisClient.Del(key...)
+}
+
+// EraseAllRedis 模糊删除
+func EraseAllRedis(key string) {
+	if RedisClient == nil {
+		return
+	}
+	val := RedisClient.Keys(key)
+	if val.Err() != nil {
+		return
+	}
+	RedisClient.Del(val.Val()...)
 }
 
 // ReadRedis 读redis
