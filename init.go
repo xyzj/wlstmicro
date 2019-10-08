@@ -31,6 +31,7 @@ type etcdConfigure struct {
 	usetls  bool
 	enable  bool
 	regAddr string
+	root    string
 }
 
 type redisConfigure struct {

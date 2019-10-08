@@ -1,5 +1,9 @@
 # changelog
 
+## [2019-10-08]
+
+- etcd增加etcd_root 配置项，用于设置etcd注册根路径
+
 ## [2019-09-11]
 
 - rabbitmq增加ssl支持

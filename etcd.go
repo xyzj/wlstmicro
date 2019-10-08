@@ -20,6 +20,7 @@ func NewETCDClient(svrName, svrType, svrProtocol string) {
 	}
 	etcdConf.addr = AppConf.GetItemDefault("etcd_addr", "127.0.0.1:2379", "etcd服务地址,ip:port格式")
 	etcdConf.regAddr = AppConf.GetItemDefault("etcd_reg", "127.0.0.1", "服务注册地址,ip[:port]格式，不指定port时，自动使用http启动参数的端口")
+	etcdConf.root = AppConf.GetItemDefault("etcd_root", "wlst-micro", "etcd注册根路径")
 	etcdConf.enable, _ = strconv.ParseBool(AppConf.GetItemDefault("etcd_enable", "true", "是否启用etcd"))
 	etcdConf.usetls, _ = strconv.ParseBool(AppConf.GetItemDefault("etcd_tls", "false", "是否使用证书连接etcd服务"))
 	if etcdConf.usetls {
@@ -45,6 +46,9 @@ func NewETCDClient(svrName, svrType, svrProtocol string) {
 	}
 
 	// 注册自身
+	if len(etcdConf.root) > 0 {
+		etcdClient.SetRoot(etcdConf.root)
+	}
 	a := strings.Split(etcdConf.regAddr, ":")
 	regPort := strconv.Itoa(MainPort)
 	if len(a) > 1 {
