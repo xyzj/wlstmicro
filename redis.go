@@ -91,6 +91,27 @@ func ReadRedis(key string) (string, error) {
 	return val.Val(), nil
 }
 
+// ReadAllRedis 模糊读redis
+func ReadAllRedis(key string) ([]string, error) {
+	if RedisClient == nil {
+		return []string{}, fmt.Errorf("redis is not ready")
+	}
+
+	val := RedisClient.Keys(key)
+	if val.Err() != nil {
+		WriteLog("REDIS", "Failed read redis data: "+key+"|"+val.Err().Error(), 40)
+		return []string{}, val.Err()
+	}
+	var s = make([]string, 0)
+	for _, v := range val.Val() {
+		vv := RedisClient.Get(v)
+		if vv.Err() == nil {
+			s = append(s, vv.Val())
+		}
+	}
+	return s, nil
+}
+
 // RedisIsReady 返回redis可用状态
 func RedisIsReady() bool {
 	return RedisClient != nil
