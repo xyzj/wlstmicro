@@ -6,6 +6,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/tidwall/gjson"
+
 	"github.com/xyzj/gopsu/mq"
 
 	"github.com/streadway/amqp"
@@ -80,10 +82,14 @@ func WriteRabbitMQ(key string, value []byte, expire time.Duration) {
 func PubEvent(eventid, status int, key, username, detail, from, jsdata string) {
 	js, _ := sjson.Set("", "time", time.Now().Unix())
 	js, _ = sjson.Set(js, "event_id", eventid)
-	js, _ = sjson.Set(js, "username", username)
+	js, _ = sjson.Set(js, "user_name", username)
 	js, _ = sjson.Set(js, "detail", detail)
 	js, _ = sjson.Set(js, "from", from)
 	js, _ = sjson.Set(js, "status", status)
+	gjson.Parse(jsdata).ForEach(func(key, value gjson.Result) bool {
+		js, _ = sjson.Set(js, key.Str, value.Value())
+		return true
+	})
 	WriteRabbitMQ(key, []byte(js), time.Minute*10)
 }
 
