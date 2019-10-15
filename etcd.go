@@ -76,3 +76,15 @@ func Picker(svrName string) (string, error) {
 	}
 	return addr, nil
 }
+
+// PickerDetail 选取服务地址,带http(s)前缀
+func PickerDetail(svrName string) (string, error) {
+	if etcdClient == nil {
+		return "", fmt.Errorf("etcd client not ready")
+	}
+	addr, err := etcdClient.PickerDetail(svrName)
+	if err != nil {
+		return "", err
+	}
+	return addr, nil
+}
