@@ -148,17 +148,17 @@ func WriteDebug(name, msg string) {
 
 // WriteInfo debug日志
 func WriteInfo(name, msg string) {
-	WriteLog(name, msg, 10)
+	WriteLog(name, msg, 20)
 }
 
 // WriteWarning debug日志
 func WriteWarning(name, msg string) {
-	WriteLog(name, msg, 10)
+	WriteLog(name, msg, 30)
 }
 
 // WriteError debug日志
 func WriteError(name, msg string) {
-	WriteLog(name, msg, 10)
+	WriteLog(name, msg, 40)
 }
 
 // WriteSystem debug日志
