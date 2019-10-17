@@ -44,7 +44,7 @@ func NewMysqlClient(mark string) {
 	activeMysql = true
 	WriteLog("SQL", "Success connect to server "+dbConf.addr, 90)
 
-	MysqlClient.ConfigCache(gopsu.DefaultCacheDir, "um"+mark, 30)
+	MysqlClient.ConfigCache(gopsu.DefaultCacheDir, "gc"+mark, 30)
 }
 
 // MysqlIsReady 返回mysql可用状态
