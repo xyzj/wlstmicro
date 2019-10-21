@@ -1,6 +1,7 @@
 package wlstmicro
 
 import (
+	"os"
 	"strconv"
 
 	"github.com/xyzj/gopsu"
@@ -39,6 +40,7 @@ func NewMysqlClient(mark string) {
 	MysqlClient, err = db.GetNewDBPool(dbConf.user, dbConf.pwd, dbConf.addr, dbConf.database, 10, true, 30)
 	if err != nil {
 		WriteLog("SQL", "Failed connect to server "+dbConf.addr+"|"+err.Error(), 40)
+		os.Exit(1)
 		return
 	}
 	activeMysql = true
