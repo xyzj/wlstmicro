@@ -66,8 +66,10 @@ var (
 	AppConf    *gopsu.ConfData
 	dbConf     = &dbConfigure{}
 	redisConf  = &redisConfigure{}
-	etcdConf   = &etcdConfigure{}
+	etcdConf   = &etcdConfigure{root: "wlst-micro"}
 	rabbitConf = &rabbitConfigure{}
+
+	RootPath = "wlst-micro"
 
 	sysLog *gopsu.MxLog
 

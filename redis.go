@@ -50,6 +50,7 @@ func WriteRedis(key string, value interface{}, expire time.Duration) error {
 	if RedisClient == nil {
 		return fmt.Errorf("redis is not ready")
 	}
+	key = "/" + RootPath + key
 	err := RedisClient.Set(key, value, expire).Err()
 	if err != nil {
 		WriteLog("REDIS", "Failed write redis data: "+err.Error(), 40)
@@ -63,7 +64,11 @@ func EraseRedis(key ...string) {
 	if RedisClient == nil {
 		return
 	}
-	RedisClient.Del(key...)
+	keys := make([]string, len(key))
+	for k, v := range key {
+		keys[k] = "/" + RootPath + v
+	}
+	RedisClient.Del(keys...)
 }
 
 // EraseAllRedis 模糊删除
@@ -71,6 +76,7 @@ func EraseAllRedis(key string) {
 	if RedisClient == nil {
 		return
 	}
+	key = "/" + RootPath + key
 	val := RedisClient.Keys(key)
 	if val.Err() != nil {
 		return
@@ -83,6 +89,7 @@ func ReadRedis(key string) (string, error) {
 	if RedisClient == nil {
 		return "", fmt.Errorf("redis is not ready")
 	}
+	key = "/" + RootPath + key
 	val := RedisClient.Get(key)
 	if val.Err() != nil {
 		WriteLog("REDIS", "Failed read redis data: "+key+"|"+val.Err().Error(), 40)
@@ -96,7 +103,7 @@ func ReadAllRedis(key string) ([]string, error) {
 	if RedisClient == nil {
 		return []string{}, fmt.Errorf("redis is not ready")
 	}
-
+	key = "/" + RootPath + key
 	val := RedisClient.Keys(key)
 	if val.Err() != nil {
 		WriteLog("REDIS", "Failed read redis data: "+key+"|"+val.Err().Error(), 40)

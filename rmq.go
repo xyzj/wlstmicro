@@ -63,6 +63,7 @@ func WriteRabbitMQ(key string, value []byte, expire time.Duration) {
 	if !activeRmq {
 		return
 	}
+	key = RootPath + "." + key
 	MQProducer.SendCustom(&mq.RabbitMQData{
 		RoutingKey: key,
 		Data: &amqp.Publishing{
@@ -80,6 +81,7 @@ func WriteRabbitMQ(key string, value []byte, expire time.Duration) {
 
 // PubEvent 事件id，状态，过滤器，用户名，详细，来源ip，额外数据
 func PubEvent(eventid, status int, key, username, detail, from, jsdata string) {
+	key = RootPath + "." + key
 	js, _ := sjson.Set("", "time", time.Now().Unix())
 	js, _ = sjson.Set(js, "event_id", eventid)
 	js, _ = sjson.Set(js, "user_name", username)
