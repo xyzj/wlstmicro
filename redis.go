@@ -45,8 +45,8 @@ func NewRedisClient() {
 	WriteLog("REDIS", "Success connect to server "+redisConf.addr, 90)
 }
 
-// AppendrootPathRedis 向redis的key追加头
-func AppendrootPathRedis(key string) string {
+// AppendRootPathRedis 向redis的key追加头
+func AppendRootPathRedis(key string) string {
 	if !strings.HasPrefix(key, rootPathRedis()) {
 		return rootPathRedis() + key
 	}
@@ -58,7 +58,7 @@ func WriteRedis(key string, value interface{}, expire time.Duration) error {
 	if redisClient == nil {
 		return fmt.Errorf("redis is not ready")
 	}
-	err := redisClient.Set(AppendrootPathRedis(key), value, expire).Err()
+	err := redisClient.Set(AppendRootPathRedis(key), value, expire).Err()
 	if err != nil {
 		WriteLog("REDIS", "Failed write redis data: "+err.Error(), 40)
 		return err
@@ -73,7 +73,7 @@ func EraseRedis(key ...string) {
 	}
 	keys := make([]string, len(key))
 	for k, v := range key {
-		keys[k] = AppendrootPathRedis(v)
+		keys[k] = AppendRootPathRedis(v)
 	}
 	redisClient.Del(keys...)
 }
@@ -83,7 +83,7 @@ func EraseAllRedis(key string) {
 	if redisClient == nil {
 		return
 	}
-	val := redisClient.Keys(AppendrootPathRedis(key))
+	val := redisClient.Keys(AppendRootPathRedis(key))
 	if val.Err() != nil {
 		return
 	}
@@ -95,7 +95,7 @@ func ReadRedis(key string) (string, error) {
 	if redisClient == nil {
 		return "", fmt.Errorf("redis is not ready")
 	}
-	val := redisClient.Get(AppendrootPathRedis(key))
+	val := redisClient.Get(AppendRootPathRedis(key))
 	if val.Err() != nil {
 		WriteLog("REDIS", "Failed read redis data: "+key+"|"+val.Err().Error(), 40)
 		return "", val.Err()
@@ -108,7 +108,7 @@ func ReadAllRedis(key string) ([]string, error) {
 	if redisClient == nil {
 		return []string{}, fmt.Errorf("redis is not ready")
 	}
-	val := redisClient.Keys(AppendrootPathRedis(key))
+	val := redisClient.Keys(AppendRootPathRedis(key))
 	if val.Err() != nil {
 		WriteLog("REDIS", "Failed read redis data: "+key+"|"+val.Err().Error(), 40)
 		return []string{}, val.Err()
