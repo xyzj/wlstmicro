@@ -103,6 +103,11 @@ func ReadRedis(key string) (string, error) {
 	return val.Val(), nil
 }
 
+// ReadAllRedisKeys 模糊读取所有匹配的key
+func ReadAllRedisKeys(key string) *redis.StringSliceCmd {
+	return redisClient.Keys(key)
+}
+
 // ReadAllRedis 模糊读redis
 func ReadAllRedis(key string) ([]string, error) {
 	if redisClient == nil {
