@@ -2,7 +2,8 @@
 
 ## [2019-10-23]
 
-- 增加公共变量RootPath
+- 增加公共变量rootPath
+- 隐藏mq和redis的client变量
 
 ## [2019-10-08]
 

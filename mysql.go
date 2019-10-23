@@ -43,7 +43,6 @@ func NewMysqlClient(mark string) {
 		os.Exit(1)
 		return
 	}
-	activeMysql = true
 	WriteLog("SQL", "Success connect to server "+dbConf.addr, 90)
 
 	MysqlClient.ConfigCache(gopsu.DefaultCacheDir, "gc"+mark, 30)

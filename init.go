@@ -66,20 +66,15 @@ var (
 	AppConf    *gopsu.ConfData
 	dbConf     = &dbConfigure{}
 	redisConf  = &redisConfigure{}
-	etcdConf   = &etcdConfigure{root: "wlst-micro"}
+	etcdConf   = &etcdConfigure{}
 	rabbitConf = &rabbitConfigure{}
 
-	RootPath = "wlst-micro"
+	rootPath = "wlst-micro"
 
 	sysLog *gopsu.MxLog
 
 	MainPort int
 	LogLevel int
-
-	activeRedis bool
-	activeMysql bool
-	activeRmq   bool
-	activeETCD  bool
 )
 
 func init() {
@@ -129,6 +124,7 @@ func LoadConfigure(f string, p, l int, clientca string) {
 		f = filepath.Join(gopsu.DefaultConfDir, f)
 	}
 	AppConf, _ = gopsu.LoadConfig(f)
+	rootPath = AppConf.GetItemDefault("root_path", "wlst-micro", "etcd/mq/redis注册根路径")
 	MainPort = p
 	LogLevel = l
 	if p > 0 && l > 0 {
@@ -202,4 +198,14 @@ func WriteLog(name, msg string, level int) {
 	// if level > LogLevel && LogLevel > 10 {
 	// 	fmt.Printf("%s [%s] %s\n", time.Now().Format(logTimeFormat), name, msg)
 	// }
+}
+
+// rootPathMQ 返回MQ消息头,例 wlst-micro.
+func rootPathMQ() string {
+	return rootPath + "."
+}
+
+// rootPathRedis 返回redis key头,例 /wlst-micro/
+func rootPathRedis() string {
+	return "/" + rootPath + "/"
 }
