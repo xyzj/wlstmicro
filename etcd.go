@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/xyzj/gopsu"
 	"github.com/xyzj/gopsu/microgo"
 )
 
@@ -27,6 +28,11 @@ func NewETCDClient(svrName, svrType, svrProtocol string) {
 	}
 	if !etcdConf.enable {
 		return
+	}
+	if etcdConf.regAddr == "127.0.0.1" || etcdConf.regAddr == "" {
+		etcdConf.regAddr, _ = gopsu.ExternalIP()
+		AppConf.UpdateItem("etcd_reg", etcdConf.regAddr)
+		AppConf.Save()
 	}
 	var err error
 	if etcdConf.usetls {

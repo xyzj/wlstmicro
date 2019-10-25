@@ -50,5 +50,5 @@ func NewMysqlClient(mark string) {
 
 // MysqlIsReady 返回mysql可用状态
 func MysqlIsReady() bool {
-	return dbConf != nil
+	return MysqlClient.IsReady
 }
