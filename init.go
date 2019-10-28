@@ -81,6 +81,7 @@ func init() {
 	if a, err := ioutil.ReadFile(".capath"); err == nil {
 		baseCAPath = gopsu.DecodeString(string(a))
 	}
+	gopsu.DefaultConfDir, gopsu.DefaultLogDir, gopsu.DefaultCacheDir = gopsu.MakeRuntimeDirs(".")
 
 	ETCDTLS = &tlsFiles{
 		Cert:     filepath.Join(baseCAPath, "etcd.pem"),
