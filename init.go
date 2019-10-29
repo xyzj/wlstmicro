@@ -57,7 +57,7 @@ type rabbitConfigure struct {
 // 本地变量
 var (
 	StandAloneMode = gopsu.IsExist(".standalone")
-	baseCAPath     = filepath.Join(gopsu.DefaultConfDir, "ca")
+	baseCAPath     string
 
 	ETCDTLS    *tlsFiles
 	HTTPTLS    *tlsFiles
@@ -78,11 +78,11 @@ var (
 )
 
 func init() {
+	gopsu.DefaultConfDir, gopsu.DefaultLogDir, gopsu.DefaultCacheDir = gopsu.MakeRuntimeDirs(".")
 	if a, err := ioutil.ReadFile(".capath"); err == nil {
 		baseCAPath = gopsu.DecodeString(string(a))
 	}
-	gopsu.DefaultConfDir, gopsu.DefaultLogDir, gopsu.DefaultCacheDir = gopsu.MakeRuntimeDirs(".")
-
+	baseCAPath = filepath.Join(gopsu.DefaultConfDir, "ca")
 	ETCDTLS = &tlsFiles{
 		Cert:     filepath.Join(baseCAPath, "etcd.pem"),
 		Key:      filepath.Join(baseCAPath, "etcd-key.pem"),
