@@ -55,6 +55,9 @@ func AppendRootPathRedis(key string) string {
 
 // WriteRedis 写redis
 func WriteRedis(key string, value interface{}, expire time.Duration) error {
+	if !redisConf.enable {
+		return nil
+	}
 	if redisClient == nil {
 		return fmt.Errorf("redis is not ready")
 	}
@@ -68,7 +71,7 @@ func WriteRedis(key string, value interface{}, expire time.Duration) error {
 
 // EraseRedis 删redis
 func EraseRedis(key ...string) {
-	if redisClient == nil {
+	if !redisConf.enable || redisClient == nil {
 		return
 	}
 	keys := make([]string, len(key))
@@ -80,7 +83,7 @@ func EraseRedis(key ...string) {
 
 // EraseAllRedis 模糊删除
 func EraseAllRedis(key string) {
-	if redisClient == nil {
+	if !redisConf.enable || redisClient == nil {
 		return
 	}
 	val := redisClient.Keys(AppendRootPathRedis(key))
@@ -105,6 +108,9 @@ func ReadRedis(key string) (string, error) {
 
 // ReadAllRedisKeys 模糊读取所有匹配的key
 func ReadAllRedisKeys(key string) *redis.StringSliceCmd {
+	if !redisConf.enable {
+		return &redis.StringSliceCmd{}
+	}
 	return redisClient.Keys(key)
 }
 
