@@ -89,12 +89,18 @@ func NewMQConsumer() {
 
 // ProducerIsReady 返回ProducerIsReady可用状态
 func ProducerIsReady() bool {
-	return mqProducer.IsReady()
+	if mqProducer != nil {
+		return mqProducer.IsReady()
+	}
+	return false
 }
 
 // ConsumerIsReady 返回ProducerIsReady可用状态
 func ConsumerIsReady() bool {
-	return mqConsumer.IsReady()
+	if mqConsumer != nil {
+		return mqConsumer.IsReady()
+	}
+	return false
 }
 
 // AppendRootPathRabbit 向rabbitmq的key追加头
