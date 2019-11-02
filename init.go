@@ -2,6 +2,7 @@ package wlstmicro
 
 import (
 	"fmt"
+	"io"
 	"io/ioutil"
 	"path/filepath"
 	"strconv"
@@ -129,7 +130,7 @@ func LoadConfigure(f string, p, l int, clientca string) {
 	MainPort = p
 	LogLevel = l
 	if p > 0 && l > 0 {
-		sysLog = gopsu.NewLogger(gopsu.DefaultLogDir, "sys"+strconv.Itoa(p))
+		sysLog = gopsu.NewLogger(gopsu.DefaultLogDir, "svr"+strconv.Itoa(p))
 		sysLog.SetLogLevel(l)
 		if gopsu.IsExist(".synclog") {
 			sysLog.SetAsync(0)
@@ -138,6 +139,11 @@ func LoadConfigure(f string, p, l int, clientca string) {
 		}
 	}
 	HTTPTLS.ClientCA = clientca
+}
+
+// DefaultLogWriter 返回默认日志读写器
+func DefaultLogWriter() io.Writer {
+	return sysLog.DefaultWriter
 }
 
 // WriteDebug debug日志
