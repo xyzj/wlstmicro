@@ -18,7 +18,7 @@ var (
 // NewRedisClient 新的redis client
 func NewRedisClient() {
 	if AppConf == nil {
-		WriteLog("SYS", "Configuration files should be loaded first", 40)
+		WriteError("SYS", "Configuration files should be loaded first")
 		return
 	}
 
@@ -39,10 +39,10 @@ func NewRedisClient() {
 	})
 	_, err = redisClient.Ping().Result()
 	if err != nil {
-		WriteLog("REDIS", "Failed connect to server "+redisConf.addr+"|"+err.Error(), 40)
+		WriteError("REDIS", "Failed connect to server "+redisConf.addr+"|"+err.Error())
 		return
 	}
-	WriteLog("REDIS", "Success connect to server "+redisConf.addr, 90)
+	WriteSystem("REDIS", "Success connect to server "+redisConf.addr)
 }
 
 // AppendRootPathRedis 向redis的key追加头
@@ -63,7 +63,7 @@ func WriteRedis(key string, value interface{}, expire time.Duration) error {
 	}
 	err := redisClient.Set(AppendRootPathRedis(key), value, expire).Err()
 	if err != nil {
-		WriteLog("REDIS", "Failed write redis data: "+err.Error(), 40)
+		WriteError("REDIS", "Failed write redis data: "+err.Error())
 		return err
 	}
 	return nil
@@ -100,7 +100,7 @@ func ReadRedis(key string) (string, error) {
 	}
 	val := redisClient.Get(AppendRootPathRedis(key))
 	if val.Err() != nil {
-		WriteLog("REDIS", "Failed read redis data: "+key+"|"+val.Err().Error(), 40)
+		WriteError("REDIS", "Failed read redis data: "+key+"|"+val.Err().Error())
 		return "", val.Err()
 	}
 	return val.Val(), nil
@@ -121,7 +121,7 @@ func ReadAllRedis(key string) ([]string, error) {
 	}
 	val := redisClient.Keys(AppendRootPathRedis(key))
 	if val.Err() != nil {
-		WriteLog("REDIS", "Failed read redis data: "+key+"|"+val.Err().Error(), 40)
+		WriteError("REDIS", "Failed read redis data: "+key+"|"+val.Err().Error())
 		return []string{}, val.Err()
 	}
 	var s = make([]string, 0)

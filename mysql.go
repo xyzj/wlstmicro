@@ -16,7 +16,7 @@ var (
 // NewMysqlClient mariadb client
 func NewMysqlClient(mark string) {
 	if AppConf == nil {
-		WriteLog("SYS", "Configuration files should be loaded first", 40)
+		WriteError("SYS", "Configuration files should be loaded first")
 		return
 	}
 	dbConf.addr = AppConf.GetItemDefault("db_addr", "127.0.0.1:3306", "sql服务地址,ip[:port[/instance]]格式")
@@ -39,11 +39,11 @@ func NewMysqlClient(mark string) {
 	}
 	MysqlClient, err = db.GetNewDBPool(dbConf.user, dbConf.pwd, dbConf.addr, dbConf.database, 10, true, 30)
 	if err != nil {
-		WriteLog("SQL", "Failed connect to server "+dbConf.addr+"|"+err.Error(), 40)
+		WriteError("SQL", "Failed connect to server "+dbConf.addr+"|"+err.Error())
 		os.Exit(1)
 		return
 	}
-	WriteLog("SQL", "Success connect to server "+dbConf.addr, 90)
+	WriteSystem("SQL", "Success connect to server "+dbConf.addr)
 
 	MysqlClient.ConfigCache(gopsu.DefaultCacheDir, "gc"+mark, 30)
 }

@@ -16,7 +16,7 @@ var (
 // NewETCDClient NewETCDClient
 func NewETCDClient(svrName, svrType, svrProtocol string) {
 	if AppConf == nil {
-		WriteLog("SYS", "Configuration files should be loaded first", 40)
+		WriteError("SYS", "Configuration files should be loaded first")
 		return
 	}
 	etcdConf.addr = AppConf.GetItemDefault("etcd_addr", "127.0.0.1:2379", "etcd服务地址,ip:port格式")
@@ -41,11 +41,13 @@ func NewETCDClient(svrName, svrType, svrProtocol string) {
 		etcdClient, err = microgo.NewEtcdv3Client([]string{etcdConf.addr})
 	}
 	if err != nil {
-		WriteLog("ETCD", "Failed connect to "+etcdConf.addr+"|"+err.Error(), 40)
+		WriteError("ETCD", "Failed connect to "+etcdConf.addr+"|"+err.Error())
 		return
 	}
-	if sysLog != nil {
-		etcdClient.SetLogger(&sysLog.DefaultWriter, LogLevel)
+	if microLog != nil {
+		etcdClient.SetLogger(&stdLogger{
+			Name: "ETCD",
+		})
 	}
 
 	// 注册自身

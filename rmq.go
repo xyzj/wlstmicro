@@ -25,7 +25,7 @@ var (
 // NewMQProducer NewRabbitmqProducer
 func NewMQProducer() {
 	if AppConf == nil {
-		WriteLog("SYS", "Configuration files should be loaded first", 40)
+		WriteError("SYS", "Configuration files should be loaded first")
 		return
 	}
 	rabbitConf.addr = AppConf.GetItemDefault("mq_addr", "127.0.0.1:5672", "mq服务地址,ip:port格式")
@@ -42,13 +42,13 @@ func NewMQProducer() {
 		return
 	}
 	mqProducer = mq.NewProducer(rabbitConf.exchange, fmt.Sprintf("amqp://%s:%s@%s/%s", rabbitConf.user, rabbitConf.pwd, rabbitConf.addr, rabbitConf.vhost), false)
-	if sysLog != nil {
-		mqProducer.SetLogger(&sysLog.DefaultWriter, LogLevel)
-	}
+	mqProducer.SetLogger(&stdLogger{
+		Name: "MQ",
+	})
 	if rabbitConf.usetls {
 		tc, err := gopsu.GetClientTLSConfig(RMQTLS.Cert, RMQTLS.Key, RMQTLS.ClientCA)
 		if err != nil {
-			WriteLog("MQ", "RabbitMQ TLS Error: "+err.Error(), 40)
+			WriteError("MQ", "RabbitMQ TLS Error: "+err.Error())
 			return
 		}
 		go mqProducer.StartTLS(tc)
@@ -61,7 +61,7 @@ func NewMQProducer() {
 // NewMQConsumer NewMQConsumer
 func NewMQConsumer() {
 	if AppConf == nil {
-		WriteLog("SYS", "Configuration files should be loaded first", 40)
+		WriteError("SYS", "Configuration files should be loaded first")
 		return
 	}
 	rabbitConf.addr = AppConf.GetItemDefault("mq_addr", "127.0.0.1:5672", "mq服务地址,ip:port格式")
@@ -80,9 +80,10 @@ func NewMQConsumer() {
 		return
 	}
 	mqConsumer = mq.NewConsumer(rabbitConf.exchange, fmt.Sprintf("amqp://%s:%s@%s/%s", rabbitConf.user, rabbitConf.pwd, rabbitConf.addr, rabbitConf.vhost), rabbitConf.queue, rabbitConf.durable, rabbitConf.autodel, false)
-	if sysLog != nil {
-		mqConsumer.SetLogger(&sysLog.DefaultWriter, LogLevel)
-	}
+	mqConsumer.SetLogger(&stdLogger{
+		Name: "MQ",
+	})
+
 	go mqConsumer.Start()
 	mqConsumer.WaitReady(5)
 }
@@ -144,9 +145,7 @@ func WriteRabbitMQ(key string, value []byte, expire time.Duration) {
 			Body:         value,
 		},
 	})
-	if LogLevel >= 20 {
-		WriteLog("MQ", "S:"+key+"|"+mq.FormatMQBody(value), 20)
-	}
+	WriteInfo("MQ", "S:"+key+"|"+mq.FormatMQBody(value))
 }
 
 // PubEvent 事件id，状态，过滤器，用户名，详细，来源ip，额外数据

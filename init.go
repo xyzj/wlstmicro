@@ -72,11 +72,40 @@ var (
 
 	rootPath = "wlst-micro"
 
-	sysLog *gopsu.MxLog
+	microLog *gopsu.MxLog
 
 	MainPort int
 	LogLevel int
 )
+
+type stdLogger struct {
+	Name string
+}
+
+// Debug Debug
+func (l *stdLogger) Debug(msgs ...string) {
+	WriteDebug(l.Name, strings.Join(msgs, ","))
+}
+
+// Info Info
+func (l *stdLogger) Info(msgs ...string) {
+	WriteInfo(l.Name, strings.Join(msgs, ","))
+}
+
+// Warn Warn
+func (l *stdLogger) Warning(msgs ...string) {
+	WriteWarning(l.Name, strings.Join(msgs, ","))
+}
+
+// Error Error
+func (l *stdLogger) Error(msgs ...string) {
+	WriteError(l.Name, strings.Join(msgs, ","))
+}
+
+// System System
+func (l *stdLogger) System(msgs ...string) {
+	WriteSystem(l.Name, strings.Join(msgs, ","))
+}
 
 func init() {
 	gopsu.DefaultConfDir, gopsu.DefaultLogDir, gopsu.DefaultCacheDir = gopsu.MakeRuntimeDirs(".")
@@ -130,12 +159,12 @@ func LoadConfigure(f string, p, l int, clientca string) {
 	MainPort = p
 	LogLevel = l
 	if p > 0 && l > 0 {
-		sysLog = gopsu.NewLogger(gopsu.DefaultLogDir, "svr"+strconv.Itoa(p))
-		sysLog.SetLogLevel(l)
+		microLog = gopsu.NewLogger(gopsu.DefaultLogDir, "svr"+strconv.Itoa(p))
+		microLog.SetLogLevel(l)
 		if gopsu.IsExist(".synclog") {
-			sysLog.SetAsync(0)
+			microLog.SetAsync(0)
 		} else {
-			sysLog.SetAsync(1)
+			microLog.SetAsync(1)
 		}
 	}
 	HTTPTLS.ClientCA = clientca
@@ -143,7 +172,7 @@ func LoadConfigure(f string, p, l int, clientca string) {
 
 // DefaultLogWriter 返回默认日志读写器
 func DefaultLogWriter() io.Writer {
-	return sysLog.DefaultWriter
+	return microLog.DefaultWriter()
 }
 
 // WriteDebug debug日志
@@ -177,34 +206,18 @@ func WriteSystem(name, msg string) {
 // level： 日志级别10,20，30,40,90
 func WriteLog(name, msg string, level int) {
 	if name == "" {
-		if sysLog == nil {
+		if microLog == nil {
 			println(fmt.Sprintf("%s", msg))
 		} else {
-			sysLog.WriteLog(fmt.Sprintf("%s", msg), level)
+			microLog.WriteLog(fmt.Sprintf("%s", msg), level)
 		}
 	} else {
-		if sysLog == nil {
+		if microLog == nil {
 			println(fmt.Sprintf("[%s] %s", name, msg))
 		} else {
-			sysLog.WriteLog(fmt.Sprintf("[%s] %s", name, msg), level)
+			microLog.WriteLog(fmt.Sprintf("[%s] %s", name, msg), level)
 		}
 	}
-	// switch level {
-	// case 10:
-	// 	sysLog.Debug(fmt.Sprintf("[%s] %s", name, msg))
-	// case 20:
-	// 	sysLog.Info(fmt.Sprintf("[%s] %s", name, msg))
-	// case 30:
-	// 	sysLog.Warning(fmt.Sprintf("[%s] %s", name, msg))
-	// case 40:
-	// 	sysLog.Error(fmt.Sprintf("[%s] %s", name, msg))
-	// default:
-	// 	sysLog.System(fmt.Sprintf("[%s] %s", name, msg))
-	// }
-	// fmt.Fprintf(gin.DefaultWriter, "%s [%s] %s\n", time.Now().Format(logTimeFormat), name, msg)
-	// if level > LogLevel && LogLevel > 10 {
-	// 	fmt.Printf("%s [%s] %s\n", time.Now().Format(logTimeFormat), name, msg)
-	// }
 }
 
 // rootPathMQ 返回MQ消息头,例 wlst-micro.
