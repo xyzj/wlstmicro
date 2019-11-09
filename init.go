@@ -114,32 +114,32 @@ var (
 	LogLevel int
 )
 
-type stdLogger struct {
+type StdLogger struct {
 	Name string
 }
 
 // Debug Debug
-func (l *stdLogger) Debug(msgs ...string) {
+func (l *StdLogger) Debug(msgs ...string) {
 	WriteDebug(l.Name, strings.Join(msgs, ","))
 }
 
 // Info Info
-func (l *stdLogger) Info(msgs ...string) {
+func (l *StdLogger) Info(msgs ...string) {
 	WriteInfo(l.Name, strings.Join(msgs, ","))
 }
 
 // Warn Warn
-func (l *stdLogger) Warning(msgs ...string) {
+func (l *StdLogger) Warning(msgs ...string) {
 	WriteWarning(l.Name, strings.Join(msgs, ","))
 }
 
 // Error Error
-func (l *stdLogger) Error(msgs ...string) {
+func (l *StdLogger) Error(msgs ...string) {
 	WriteError(l.Name, strings.Join(msgs, ","))
 }
 
 // System System
-func (l *stdLogger) System(msgs ...string) {
+func (l *StdLogger) System(msgs ...string) {
 	WriteSystem(l.Name, strings.Join(msgs, ","))
 }
 

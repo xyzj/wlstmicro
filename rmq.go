@@ -42,7 +42,7 @@ func NewMQProducer() {
 		return
 	}
 	mqProducer = mq.NewProducer(rabbitConf.exchange, fmt.Sprintf("amqp://%s:%s@%s/%s", rabbitConf.user, rabbitConf.pwd, rabbitConf.addr, rabbitConf.vhost), false)
-	mqProducer.SetLogger(&stdLogger{
+	mqProducer.SetLogger(&StdLogger{
 		Name: "MQ",
 	})
 	if rabbitConf.usetls {
@@ -86,7 +86,7 @@ func NewMQConsumer(svrName string) {
 		rabbitConf.autodel = true
 	}
 	mqConsumer = mq.NewConsumer(rabbitConf.exchange, fmt.Sprintf("amqp://%s:%s@%s/%s", rabbitConf.user, rabbitConf.pwd, rabbitConf.addr, rabbitConf.vhost), rabbitConf.queue, rabbitConf.durable, rabbitConf.autodel, false)
-	mqConsumer.SetLogger(&stdLogger{
+	mqConsumer.SetLogger(&StdLogger{
 		Name: "MQ",
 	})
 

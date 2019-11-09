@@ -44,11 +44,9 @@ func NewETCDClient(svrName, svrType, svrProtocol string) {
 		WriteError("ETCD", "Failed connect to "+etcdConf.addr+"|"+err.Error())
 		return
 	}
-	if microLog != nil {
-		etcdClient.SetLogger(&stdLogger{
-			Name: "ETCD",
-		})
-	}
+	etcdClient.SetLogger(&StdLogger{
+		Name: "ETCD",
+	})
 
 	// 注册自身
 	if len(rootPath) > 0 {
