@@ -59,7 +59,7 @@ func NewMQProducer() {
 }
 
 // NewMQConsumer NewMQConsumer
-func NewMQConsumer() {
+func NewMQConsumer(svrName string) {
 	if AppConf == nil {
 		WriteError("SYS", "Configuration files should be loaded first")
 		return
@@ -69,7 +69,7 @@ func NewMQConsumer() {
 	rabbitConf.pwd = gopsu.DecodeString(AppConf.GetItemDefault("mq_pwd", "WcELCNqP5dCpvMmMbKDdvgb", "mq连接密码"))
 	rabbitConf.vhost = AppConf.GetItemDefault("mq_vhost", "", "mq虚拟域名")
 	rabbitConf.exchange = AppConf.GetItemDefault("mq_exchange", "luwak_topic", "mq交换机名称")
-	rabbitConf.queue = AppConf.GetItemDefault("mq_queue", "abc", "mq队列名称")
+	rabbitConf.queueRandom, _ = strconv.ParseBool(AppConf.GetItemDefault("mq_queue_random", "false", "随机队列名，true-用于独占模式，false-负载均衡（默认）"))
 	rabbitConf.durable, _ = strconv.ParseBool(AppConf.GetItemDefault("mq_durable", "true", "队列是否持久化"))
 	rabbitConf.autodel, _ = strconv.ParseBool(AppConf.GetItemDefault("mq_autodel", "true", "队列在未使用时是否删除"))
 	rabbitConf.enable, _ = strconv.ParseBool(AppConf.GetItemDefault("mq_enable", "true", "是否启用rabbitmq"))
@@ -78,6 +78,12 @@ func NewMQConsumer() {
 	}
 	if !rabbitConf.enable {
 		return
+	}
+	rabbitConf.queue = rootPath + "_" + svrName
+	if rabbitConf.queueRandom {
+		rabbitConf.queue += "_" + gopsu.GetMD5(time.Now().Format("150405000"))
+		rabbitConf.durable = false
+		rabbitConf.autodel = true
 	}
 	mqConsumer = mq.NewConsumer(rabbitConf.exchange, fmt.Sprintf("amqp://%s:%s@%s/%s", rabbitConf.user, rabbitConf.pwd, rabbitConf.addr, rabbitConf.vhost), rabbitConf.queue, rabbitConf.durable, rabbitConf.autodel, false)
 	mqConsumer.SetLogger(&stdLogger{

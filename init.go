@@ -11,48 +11,84 @@ import (
 	"github.com/xyzj/gopsu"
 )
 
+// tls配置
 type tlsFiles struct {
-	Cert     string
-	Key      string
+	// ca证书
+	Cert string
+	// ca key
+	Key string
+	// 客户端ca根证书
 	ClientCA string
 }
 
+// 数据库配置
 type dbConfigure struct {
-	addr     string
-	user     string
-	pwd      string
+	// 数据库地址
+	addr string
+	// 登录用户名
+	user string
+	// 登录密码
+	pwd string
+	// 数据库名称
 	database string
-	driver   string
-	enable   bool
-	usetls   bool
+	// 数据库驱动模式，mssql/mysql
+	driver string
+	// 是否启用数据库
+	enable bool
+	// 是否启用tls
+	usetls bool
 }
 
+// etcd配置
 type etcdConfigure struct {
-	addr    string
-	usetls  bool
-	enable  bool
+	// etcd服务地址
+	addr string
+	// 是否启用tls
+	usetls bool
+	// 是否启用etcd
+	enable bool
+	// 对外公布注册地址
 	regAddr string
-	root    string
+	// 注册根路径
+	root string
 }
 
+// redis配置
 type redisConfigure struct {
-	addr     string
-	pwd      string
+	// redis服务地址
+	addr string
+	// 访问密码
+	pwd string
+	// 数据库
 	database int
-	enable   bool
+	// 是否启用redis
+	enable bool
 }
 
+// rabbitmq配置
 type rabbitConfigure struct {
-	addr     string
-	user     string
-	pwd      string
-	vhost    string
+	// rmq服务地址
+	addr string
+	// 登录用户名
+	user string
+	// 登录密码
+	pwd string
+	// 虚拟域名
+	vhost string
+	// 交换机名称
 	exchange string
-	queue    string
-	durable  bool
-	autodel  bool
-	usetls   bool
-	enable   bool
+	// 队列名称
+	queue string
+	// 是否使用随机队列名
+	queueRandom bool
+	// 队列是否持久化
+	durable bool
+	// 队列是否在未使用时自动删除
+	autodel bool
+	// 是否启用tls
+	usetls bool
+	// 是否启用rmq
+	enable bool
 }
 
 // 本地变量
@@ -108,11 +144,14 @@ func (l *stdLogger) System(msgs ...string) {
 }
 
 func init() {
+	// 创建固定目录
 	gopsu.DefaultConfDir, gopsu.DefaultLogDir, gopsu.DefaultCacheDir = gopsu.MakeRuntimeDirs(".")
-	if a, err := ioutil.ReadFile(".capath"); err == nil {
-		baseCAPath = gopsu.DecodeString(string(a))
-	}
+	// 配置默认ca文件路径
 	baseCAPath = filepath.Join(gopsu.DefaultConfDir, "ca")
+	// 检查是否有ca文件指向配置存在,存在则更新路径信息
+	if a, err := ioutil.ReadFile(".capath"); err == nil {
+		baseCAPath = gopsu.DecodeString(gopsu.TrimString(string(a)))
+	}
 	ETCDTLS = &tlsFiles{
 		Cert:     filepath.Join(baseCAPath, "etcd.pem"),
 		Key:      filepath.Join(baseCAPath, "etcd-key.pem"),
@@ -180,22 +219,22 @@ func WriteDebug(name, msg string) {
 	WriteLog(name, msg, 10)
 }
 
-// WriteInfo debug日志
+// WriteInfo Info日志
 func WriteInfo(name, msg string) {
 	WriteLog(name, msg, 20)
 }
 
-// WriteWarning debug日志
+// WriteWarning Warning日志
 func WriteWarning(name, msg string) {
 	WriteLog(name, msg, 30)
 }
 
-// WriteError debug日志
+// WriteError Error日志
 func WriteError(name, msg string) {
 	WriteLog(name, msg, 40)
 }
 
-// WriteSystem debug日志
+// WriteSystem System日志
 func WriteSystem(name, msg string) {
 	WriteLog(name, msg, 90)
 }
