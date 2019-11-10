@@ -115,32 +115,78 @@ var (
 )
 
 type StdLogger struct {
-	Name string
+	Name        string
+	LogReplacer *strings.Replacer
 }
 
 // Debug Debug
-func (l *StdLogger) Debug(msgs ...string) {
-	WriteDebug(l.Name, strings.Join(msgs, ","))
+func (l *StdLogger) Debug(msgs string) {
+	WriteDebug(l.Name, msgs)
 }
 
 // Info Info
-func (l *StdLogger) Info(msgs ...string) {
-	WriteInfo(l.Name, strings.Join(msgs, ","))
+func (l *StdLogger) Info(msgs string) {
+	WriteInfo(l.Name, msgs)
 }
 
 // Warn Warn
-func (l *StdLogger) Warning(msgs ...string) {
-	WriteWarning(l.Name, strings.Join(msgs, ","))
+func (l *StdLogger) Warning(msgs string) {
+	WriteWarning(l.Name, msgs)
 }
 
 // Error Error
-func (l *StdLogger) Error(msgs ...string) {
-	WriteError(l.Name, strings.Join(msgs, ","))
+func (l *StdLogger) Error(msgs string) {
+	WriteError(l.Name, msgs)
 }
 
 // System System
-func (l *StdLogger) System(msgs ...string) {
-	WriteSystem(l.Name, strings.Join(msgs, ","))
+func (l *StdLogger) System(msgs string) {
+	WriteSystem(l.Name, msgs)
+}
+
+// Debug Debug
+func (l *StdLogger) DebugFormat(f string, msg ...interface{}) {
+	if f == "" {
+		WriteDebug(l.Name, l.LogReplacer.Replace(fmt.Sprintf("%v", msg)))
+	} else {
+		WriteDebug(l.Name, fmt.Sprintf(f, msg...))
+	}
+}
+
+// Info Info
+func (l *StdLogger) InfoFormat(f string, msg ...interface{}) {
+	if f == "" {
+		WriteInfo(l.Name, l.LogReplacer.Replace(fmt.Sprintf("%v", msg)))
+	} else {
+		WriteInfo(l.Name, fmt.Sprintf(f, msg...))
+	}
+}
+
+// Warn Warn
+func (l *StdLogger) WarningFormat(f string, msg ...interface{}) {
+	if f == "" {
+		WriteWarning(l.Name, l.LogReplacer.Replace(fmt.Sprintf("%v", msg)))
+	} else {
+		WriteWarning(l.Name, fmt.Sprintf(f, msg...))
+	}
+}
+
+// Error Error
+func (l *StdLogger) ErrorFormat(f string, msg ...interface{}) {
+	if f == "" {
+		WriteError(l.Name, l.LogReplacer.Replace(fmt.Sprintf("%v", msg)))
+	} else {
+		WriteError(l.Name, fmt.Sprintf(f, msg...))
+	}
+}
+
+// System System
+func (l *StdLogger) SystemFormat(f string, msg ...interface{}) {
+	if f == "" {
+		WriteSystem(l.Name, l.LogReplacer.Replace(fmt.Sprintf("%v", msg)))
+	} else {
+		WriteSystem(l.Name, fmt.Sprintf(f, msg...))
+	}
 }
 
 func init() {

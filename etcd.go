@@ -45,7 +45,8 @@ func NewETCDClient(svrName, svrType, svrProtocol string) {
 		return
 	}
 	etcdClient.SetLogger(&StdLogger{
-		Name: "ETCD",
+		Name:        "ETCD",
+		LogReplacer: strings.NewReplacer("[", "", "]", ""),
 	})
 
 	// 注册自身

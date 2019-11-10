@@ -43,7 +43,8 @@ func NewMQProducer() {
 	}
 	mqProducer = mq.NewProducer(rabbitConf.exchange, fmt.Sprintf("amqp://%s:%s@%s/%s", rabbitConf.user, rabbitConf.pwd, rabbitConf.addr, rabbitConf.vhost), false)
 	mqProducer.SetLogger(&StdLogger{
-		Name: "MQ",
+		Name:        "MQ",
+		LogReplacer: strings.NewReplacer("[", "", "]", ""),
 	})
 	if rabbitConf.usetls {
 		tc, err := gopsu.GetClientTLSConfig(RMQTLS.Cert, RMQTLS.Key, RMQTLS.ClientCA)
