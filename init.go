@@ -114,6 +114,7 @@ var (
 	LogLevel int
 )
 
+// StdLogger StdLogger
 type StdLogger struct {
 	Name        string
 	LogReplacer *strings.Replacer
@@ -129,7 +130,7 @@ func (l *StdLogger) Info(msgs string) {
 	WriteInfo(l.Name, msgs)
 }
 
-// Warn Warn
+// Warning Warn
 func (l *StdLogger) Warning(msgs string) {
 	WriteWarning(l.Name, msgs)
 }
@@ -144,7 +145,7 @@ func (l *StdLogger) System(msgs string) {
 	WriteSystem(l.Name, msgs)
 }
 
-// Debug Debug
+// DebugFormat Debug
 func (l *StdLogger) DebugFormat(f string, msg ...interface{}) {
 	if f == "" {
 		WriteDebug(l.Name, l.LogReplacer.Replace(fmt.Sprintf("%v", msg)))
@@ -153,7 +154,7 @@ func (l *StdLogger) DebugFormat(f string, msg ...interface{}) {
 	}
 }
 
-// Info Info
+// InfoFormat Info
 func (l *StdLogger) InfoFormat(f string, msg ...interface{}) {
 	if f == "" {
 		WriteInfo(l.Name, l.LogReplacer.Replace(fmt.Sprintf("%v", msg)))
@@ -162,7 +163,7 @@ func (l *StdLogger) InfoFormat(f string, msg ...interface{}) {
 	}
 }
 
-// Warn Warn
+// WarningFormat Warn
 func (l *StdLogger) WarningFormat(f string, msg ...interface{}) {
 	if f == "" {
 		WriteWarning(l.Name, l.LogReplacer.Replace(fmt.Sprintf("%v", msg)))
@@ -171,7 +172,7 @@ func (l *StdLogger) WarningFormat(f string, msg ...interface{}) {
 	}
 }
 
-// Error Error
+// ErrorFormat Error
 func (l *StdLogger) ErrorFormat(f string, msg ...interface{}) {
 	if f == "" {
 		WriteError(l.Name, l.LogReplacer.Replace(fmt.Sprintf("%v", msg)))
@@ -180,7 +181,7 @@ func (l *StdLogger) ErrorFormat(f string, msg ...interface{}) {
 	}
 }
 
-// System System
+// SystemFormat System
 func (l *StdLogger) SystemFormat(f string, msg ...interface{}) {
 	if f == "" {
 		WriteSystem(l.Name, l.LogReplacer.Replace(fmt.Sprintf("%v", msg)))

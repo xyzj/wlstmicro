@@ -16,10 +16,10 @@ var (
 )
 
 // NewRedisClient 新的redis client
-func NewRedisClient() {
+func NewRedisClient() bool {
 	if AppConf == nil {
 		WriteError("SYS", "Configuration files should be loaded first")
-		return
+		return false
 	}
 
 	redisConf.addr = AppConf.GetItemDefault("redis_addr", "127.0.0.1:6379", "redis服务地址,ip:port格式")
@@ -28,7 +28,7 @@ func NewRedisClient() {
 	redisConf.enable, _ = strconv.ParseBool(AppConf.GetItemDefault("redis_enable", "true", "是否启用redis"))
 
 	if !redisConf.enable {
-		return
+		return false
 	}
 	var err error
 
@@ -40,9 +40,10 @@ func NewRedisClient() {
 	_, err = redisClient.Ping().Result()
 	if err != nil {
 		WriteError("REDIS", "Failed connect to server "+redisConf.addr+"|"+err.Error())
-		return
+		return false
 	}
 	WriteSystem("REDIS", "Success connect to server "+redisConf.addr)
+	return true
 }
 
 // AppendRootPathRedis 向redis的key追加头

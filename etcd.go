@@ -14,10 +14,10 @@ var (
 )
 
 // NewETCDClient NewETCDClient
-func NewETCDClient(svrName, svrType, svrProtocol string) {
+func NewETCDClient(svrName, svrType, svrProtocol string) bool {
 	if AppConf == nil {
 		WriteError("SYS", "Configuration files should be loaded first")
-		return
+		return false
 	}
 	etcdConf.addr = AppConf.GetItemDefault("etcd_addr", "127.0.0.1:2379", "etcd服务地址,ip:port格式")
 	etcdConf.regAddr = AppConf.GetItemDefault("etcd_reg", "127.0.0.1", "服务注册地址,ip[:port]格式，不指定port时，自动使用http启动参数的端口")
@@ -27,7 +27,7 @@ func NewETCDClient(svrName, svrType, svrProtocol string) {
 		etcdConf.addr = strings.Replace(etcdConf.addr, "2379", "2378", 1)
 	}
 	if !etcdConf.enable {
-		return
+		return false
 	}
 	if etcdConf.regAddr == "127.0.0.1" || etcdConf.regAddr == "" {
 		etcdConf.regAddr, _ = gopsu.ExternalIP()
@@ -42,7 +42,7 @@ func NewETCDClient(svrName, svrType, svrProtocol string) {
 	}
 	if err != nil {
 		WriteError("ETCD", "Failed connect to "+etcdConf.addr+"|"+err.Error())
-		return
+		return false
 	}
 	etcdClient.SetLogger(&StdLogger{
 		Name:        "ETCD",
@@ -62,6 +62,7 @@ func NewETCDClient(svrName, svrType, svrProtocol string) {
 	// etcdClient.Register("usermanager", a[0], regPort, "http", "json")
 	// 获取服务列表信息
 	etcdClient.Watcher()
+	return true
 }
 
 // ETCDIsReady 返回ETCD可用状态

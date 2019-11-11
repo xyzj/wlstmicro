@@ -1,5 +1,10 @@
 # changelog
 
+## [2019-11-11]
+
+- 修正rabbitmq未启动时，状态检查的bug
+- sql,redis,etcd,rmq启动时返回是否成功
+
 ## [2019-11-09]
 
 - 使用interface传递封装库日志

@@ -23,10 +23,10 @@ var (
 )
 
 // NewMQProducer NewRabbitmqProducer
-func NewMQProducer() {
+func NewMQProducer() bool {
 	if AppConf == nil {
 		WriteError("SYS", "Configuration files should be loaded first")
-		return
+		return false
 	}
 	rabbitConf.addr = AppConf.GetItemDefault("mq_addr", "127.0.0.1:5672", "mq服务地址,ip:port格式")
 	rabbitConf.user = AppConf.GetItemDefault("mq_user", "arx7", "mq连接用户名")
@@ -39,7 +39,7 @@ func NewMQProducer() {
 		rabbitConf.addr = strings.Replace(rabbitConf.addr, "5672", "5671", 1)
 	}
 	if !rabbitConf.enable {
-		return
+		return false
 	}
 	mqProducer = mq.NewProducer(rabbitConf.exchange, fmt.Sprintf("amqp://%s:%s@%s/%s", rabbitConf.user, rabbitConf.pwd, rabbitConf.addr, rabbitConf.vhost), false)
 	mqProducer.SetLogger(&StdLogger{
@@ -50,20 +50,21 @@ func NewMQProducer() {
 		tc, err := gopsu.GetClientTLSConfig(RMQTLS.Cert, RMQTLS.Key, RMQTLS.ClientCA)
 		if err != nil {
 			WriteError("MQ", "RabbitMQ TLS Error: "+err.Error())
-			return
+			return false
 		}
 		go mqProducer.StartTLS(tc)
 	} else {
 		go mqProducer.Start()
 	}
 	mqProducer.WaitReady(5)
+	return true
 }
 
 // NewMQConsumer NewMQConsumer
-func NewMQConsumer(svrName string) {
+func NewMQConsumer(svrName string) bool {
 	if AppConf == nil {
 		WriteError("SYS", "Configuration files should be loaded first")
-		return
+		return false
 	}
 	rabbitConf.addr = AppConf.GetItemDefault("mq_addr", "127.0.0.1:5672", "mq服务地址,ip:port格式")
 	rabbitConf.user = AppConf.GetItemDefault("mq_user", "arx7", "mq连接用户名")
@@ -78,7 +79,7 @@ func NewMQConsumer(svrName string) {
 		rabbitConf.addr = strings.Replace(rabbitConf.addr, "5672", "5671", 1)
 	}
 	if !rabbitConf.enable {
-		return
+		return false
 	}
 	rabbitConf.queue = rootPath + "_" + svrName
 	if rabbitConf.queueRandom {
@@ -93,6 +94,7 @@ func NewMQConsumer(svrName string) {
 
 	go mqConsumer.Start()
 	mqConsumer.WaitReady(5)
+	return true
 }
 
 // ProducerIsReady 返回ProducerIsReady可用状态
@@ -121,7 +123,7 @@ func AppendRootPathRabbit(key string) string {
 
 // BindRabbitMQ 绑定消费者key
 func BindRabbitMQ(keys ...string) {
-	if !mqConsumer.IsReady() {
+	if !ConsumerIsReady() {
 		return
 	}
 	for _, v := range keys {
@@ -134,12 +136,15 @@ func BindRabbitMQ(keys ...string) {
 
 // ReadRabbitMQ 接收消费者数据
 func ReadRabbitMQ() (<-chan amqp.Delivery, error) {
+	if !ConsumerIsReady() {
+		return nil, fmt.Errorf("Consumer is not ready")
+	}
 	return mqConsumer.Recv()
 }
 
 // WriteRabbitMQ 写mq
 func WriteRabbitMQ(key string, value []byte, expire time.Duration) {
-	if !mqProducer.IsReady() {
+	if !ConsumerIsReady() {
 		return
 	}
 	mqProducer.SendCustom(&mq.RabbitMQData{
