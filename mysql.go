@@ -9,7 +9,7 @@ import (
 
 var (
 	// MysqlClient mysql连接池
-	MysqlClient *db.MySQL
+	MysqlClient *db.SQLPool
 )
 
 // NewMysqlClient mariadb client
@@ -23,34 +23,40 @@ func NewMysqlClient(mark string) bool {
 	dbConf.pwd = gopsu.DecodeString(AppConf.GetItemDefault("db_pwd", "SsWAbSy8H1EOP3n5LdUQqls", "sql密码"))
 	dbConf.database = AppConf.GetItemDefault("db_name", "mydb1024", "sql数据库名称")
 	dbConf.driver = AppConf.GetItemDefault("db_drive", "mysql", "sql数据库驱动，mysql 或 mssql")
-	// dbConf.usetls, _ = strconv.ParseBool(AppConf.GetItemDefault("etcd_tls", "false", "是否使用证书连接sql服务"))
 	dbConf.enable, _ = strconv.ParseBool(AppConf.GetItemDefault("db_enable", "true", "是否启用sql"))
 
 	if !dbConf.enable {
 		return false
 	}
-	var err error
+	MysqlClient = &db.SQLPool{
+		User:        dbConf.user,
+		Server:      dbConf.addr,
+		Passwd:      dbConf.pwd,
+		DataBase:    dbConf.database,
+		EnableCache: true,
+		CacheDir:    gopsu.DefaultCacheDir,
+		CacheHead:   "gc" + mark,
+		Timeout:     120,
+	}
 	switch dbConf.driver {
 	case "mssql":
-		db.SetDBDriver(db.DriverMSSQL)
+		MysqlClient.DriverType = db.DriverMSSQL
 	default:
-		db.SetDBDriver(db.DriverMYSQL)
+		MysqlClient.DriverType = db.DriverMYSQL
 	}
-	MysqlClient, err = db.GetNewDBPool(dbConf.user, dbConf.pwd, dbConf.addr, dbConf.database, 10, true, 30)
+	err := MysqlClient.New()
 	if err != nil {
 		WriteError("SQL", "Failed connect to server "+dbConf.addr+"|"+err.Error())
 		return false
 	}
-	WriteSystem("SQL", "Success connect to server "+dbConf.addr)
 
-	MysqlClient.ConfigCache(gopsu.DefaultCacheDir, "gc"+mark, 30)
 	return true
 }
 
 // MysqlIsReady 返回mysql可用状态
 func MysqlIsReady() bool {
 	if MysqlClient != nil {
-		return MysqlClient.IsReady
+		return MysqlClient.IsReady()
 	}
 	return false
 }
