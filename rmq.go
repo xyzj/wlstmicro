@@ -38,6 +38,7 @@ func NewMQProducer() bool {
 	if rabbitConf.usetls {
 		rabbitConf.addr = strings.Replace(rabbitConf.addr, "5672", "5671", 1)
 	}
+	AppConf.Save()
 	if !rabbitConf.enable {
 		return false
 	}
@@ -78,6 +79,7 @@ func NewMQConsumer(svrName string) bool {
 	if rabbitConf.usetls {
 		rabbitConf.addr = strings.Replace(rabbitConf.addr, "5672", "5671", 1)
 	}
+	AppConf.Save()
 	if !rabbitConf.enable {
 		return false
 	}

@@ -24,7 +24,7 @@ func NewMysqlClient(mark string) bool {
 	dbConf.database = AppConf.GetItemDefault("db_name", "mydb1024", "sql数据库名称")
 	dbConf.driver = AppConf.GetItemDefault("db_drive", "mysql", "sql数据库驱动，mysql 或 mssql")
 	dbConf.enable, _ = strconv.ParseBool(AppConf.GetItemDefault("db_enable", "true", "是否启用sql"))
-
+	AppConf.Save()
 	if !dbConf.enable {
 		return false
 	}

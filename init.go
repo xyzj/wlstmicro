@@ -242,6 +242,7 @@ func LoadConfigure(f string, p, l int, clientca string) {
 	}
 	AppConf, _ = gopsu.LoadConfig(f)
 	rootPath = AppConf.GetItemDefault("root_path", "wlst-micro", "etcd/mq/redis注册根路径")
+	AppConf.Save()
 	MainPort = p
 	LogLevel = l
 	if p > 0 && l > 0 {

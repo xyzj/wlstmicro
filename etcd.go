@@ -26,13 +26,13 @@ func NewETCDClient(svrName, svrType, svrProtocol string) bool {
 	if etcdConf.usetls {
 		etcdConf.addr = strings.Replace(etcdConf.addr, "2379", "2378", 1)
 	}
-	if !etcdConf.enable {
-		return false
-	}
 	if etcdConf.regAddr == "127.0.0.1" || etcdConf.regAddr == "" {
 		etcdConf.regAddr, _ = gopsu.ExternalIP()
 		AppConf.UpdateItem("etcd_reg", etcdConf.regAddr)
-		AppConf.Save()
+	}
+	AppConf.Save()
+	if !etcdConf.enable {
+		return false
 	}
 	var err error
 	if etcdConf.usetls {
