@@ -59,7 +59,6 @@ func NewETCDClient(svrName, svrType, svrProtocol string) bool {
 		regPort = a[1]
 	}
 	etcdClient.Register(svrName, a[0], regPort, svrType, svrProtocol)
-	// etcdClient.Register("usermanager", a[0], regPort, "http", "json")
 	// 获取服务列表信息
 	etcdClient.Watcher()
 	return true
