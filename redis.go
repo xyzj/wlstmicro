@@ -99,7 +99,8 @@ func ReadRedis(key string) (string, error) {
 	if redisClient == nil {
 		return "", fmt.Errorf("redis is not ready")
 	}
-	val := redisClient.Get(AppendRootPathRedis(key))
+	key = AppendRootPathRedis(key)
+	val := redisClient.Get(key)
 	if val.Err() != nil {
 		WriteError("REDIS", "Failed read redis data: "+key+"|"+val.Err().Error())
 		return "", val.Err()
@@ -120,7 +121,8 @@ func ReadAllRedis(key string) ([]string, error) {
 	if redisClient == nil {
 		return []string{}, fmt.Errorf("redis is not ready")
 	}
-	val := redisClient.Keys(AppendRootPathRedis(key))
+	key = AppendRootPathRedis(key)
+	val := redisClient.Keys(key)
 	if val.Err() != nil {
 		WriteError("REDIS", "Failed read redis data: "+key+"|"+val.Err().Error())
 		return []string{}, val.Err()

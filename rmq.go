@@ -149,8 +149,9 @@ func WriteRabbitMQ(key string, value []byte, expire time.Duration) {
 	if !ConsumerIsReady() {
 		return
 	}
+	key = AppendRootPathRabbit(key)
 	mqProducer.SendCustom(&mq.RabbitMQData{
-		RoutingKey: AppendRootPathRabbit(key),
+		RoutingKey: key,
 		Data: &amqp.Publishing{
 			ContentType:  "text/plain",
 			DeliveryMode: amqp.Persistent,
