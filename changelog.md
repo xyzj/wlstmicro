@@ -1,5 +1,9 @@
 # changelog
 
+## [2019-12-04]
+
+- mq增加mq_gpstiming，用于接收mq的gps校时数据，对本地系统进行对时
+
 ## [2019-11-11]
 
 - 修正rabbitmq未启动时，状态检查的bug

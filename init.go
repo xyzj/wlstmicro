@@ -89,6 +89,8 @@ type rabbitConfigure struct {
 	usetls bool
 	// 是否启用rmq
 	enable bool
+	// 启用gps校时,0-不启用，1-启用（30～900s内进行矫正），2-强制对时
+	gpsTiming int64
 }
 
 // 本地变量
@@ -242,6 +244,7 @@ func LoadConfigure(f string, p, l int, clientca string) {
 	}
 	AppConf, _ = gopsu.LoadConfig(f)
 	rootPath = AppConf.GetItemDefault("root_path", "wlst-micro", "etcd/mq/redis注册根路径")
+	rabbitConf.gpsTiming, _ = strconv.ParseInt(AppConf.GetItemDefault("mq_gpstiming", "0", "是否使用广播的gps时间进行对时操作,0-不启用，1-启用（30～900s内进行矫正），2-忽略误差范围强制矫正"), 10, 0)
 	AppConf.Save()
 	MainPort = p
 	LogLevel = l
@@ -255,6 +258,9 @@ func LoadConfigure(f string, p, l int, clientca string) {
 		}
 	}
 	HTTPTLS.ClientCA = clientca
+	if rabbitConf.gpsTiming != 0 {
+		go newGPSConsumer(strconv.Itoa(p))
+	}
 }
 
 // DefaultLogWriter 返回默认日志读写器

@@ -4,15 +4,14 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
-	"github.com/tidwall/gjson"
-
-	"github.com/xyzj/gopsu/mq"
-
 	"github.com/streadway/amqp"
+	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
 	"github.com/xyzj/gopsu"
+	"github.com/xyzj/gopsu/mq"
 )
 
 var (
@@ -20,6 +19,9 @@ var (
 	mqProducer *mq.Session
 	// mqConsumer 消费者
 	mqConsumer *mq.Session
+	// gpsConsumer
+	gpsConsumer     *mq.Session
+	gpsRecvWaitLock sync.WaitGroup
 )
 
 // NewMQProducer NewRabbitmqProducer
@@ -76,16 +78,18 @@ func NewMQConsumer(svrName string) bool {
 	rabbitConf.durable, _ = strconv.ParseBool(AppConf.GetItemDefault("mq_durable", "true", "队列是否持久化"))
 	rabbitConf.autodel, _ = strconv.ParseBool(AppConf.GetItemDefault("mq_autodel", "true", "队列在未使用时是否删除"))
 	rabbitConf.enable, _ = strconv.ParseBool(AppConf.GetItemDefault("mq_enable", "true", "是否启用rabbitmq"))
+
 	if rabbitConf.usetls {
 		rabbitConf.addr = strings.Replace(rabbitConf.addr, "5672", "5671", 1)
 	}
 	AppConf.Save()
+	// 若不启用mq功能，则退出
 	if !rabbitConf.enable {
 		return false
 	}
 	rabbitConf.queue = rootPath + "_" + svrName
 	if rabbitConf.queueRandom {
-		rabbitConf.queue += "_" + svrName + "_" + gopsu.GetMD5(time.Now().Format("150405000"))
+		rabbitConf.queue += "_" + gopsu.GetMD5(time.Now().Format("150405000"))
 		rabbitConf.durable = false
 		rabbitConf.autodel = true
 	}
