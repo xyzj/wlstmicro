@@ -4,11 +4,19 @@ import (
 	"fmt"
 	"math"
 	"os/exec"
+	"sync"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/tidwall/gjson"
 	"github.com/xyzj/gopsu"
 	"github.com/xyzj/gopsu/mq"
+)
+
+var (
+	// gpsConsumer
+	gpsConsumer     *mq.Session
+	gpsRecvWaitLock sync.WaitGroup
 )
 
 // 启用gps校时
@@ -28,7 +36,7 @@ func newGPSConsumer(svrName string) {
 	})
 
 	go gpsConsumer.Start()
-	gpsConsumer.WaitReady(5)
+	gpsConsumer.WaitReady(10)
 
 	gpsConsumer.BindKey(AppendRootPathRabbit("gps.serlreader.#"))
 	go gpsRecv()
@@ -45,7 +53,7 @@ func handerGPSRecv() {
 func gpsRecv() {
 	defer func() {
 		if err := recover(); err != nil {
-			WriteError("MQGPS", "Rcv Crash: "+err.(error).Error())
+			WriteError("MQGPS", "Rcv Crash: "+errors.WithStack(err.(error)).Error())
 		}
 		gpsRecvWaitLock.Done()
 	}()
@@ -56,7 +64,7 @@ func gpsRecv() {
 		return
 	}
 	for d := range rcvMQ {
-		WriteDebug("MQGPS", "R:"+d.RoutingKey+"|"+string(d.Body))
+		WriteDebug("MQGPS", "Debug-R:"+d.RoutingKey+"|"+string(d.Body))
 		gpsData := gjson.ParseBytes(d.Body)
 		if math.Abs(float64(gpsData.Get("cache_time").Int()-time.Now().Unix())) < 30 {
 			switch rabbitConf.gpsTiming {

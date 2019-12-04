@@ -1,12 +1,14 @@
 package wlstmicro
 
 import (
+	"encoding/base64"
 	"fmt"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/streadway/amqp"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
@@ -19,9 +21,8 @@ var (
 	mqProducer *mq.Session
 	// mqConsumer 消费者
 	mqConsumer *mq.Session
-	// gpsConsumer
-	gpsConsumer     *mq.Session
-	gpsRecvWaitLock sync.WaitGroup
+	// 消费者监控锁
+	mqRecvWaitLock sync.WaitGroup
 )
 
 // NewMQProducer NewRabbitmqProducer
@@ -97,10 +98,47 @@ func NewMQConsumer(svrName string) bool {
 	mqConsumer.SetLogger(&StdLogger{
 		Name: "MQ",
 	})
-
 	go mqConsumer.Start()
-	mqConsumer.WaitReady(5)
+	mqConsumer.WaitReady(10)
 	return true
+}
+
+// RecvRabbitMQ 接收消息
+// f: 消息处理方法，key为消息过滤器，body为消息体
+func RecvRabbitMQ(f func(key string, body []byte)) {
+	go func() {
+		defer func() {
+			if err := recover(); err != nil {
+				WriteError("MQ", "Consumer core crash: "+errors.WithStack(err.(error)).Error())
+			}
+		}()
+		for {
+			time.Sleep(time.Second)
+			mqRecvWaitLock.Wait()
+			mqConsumer.WaitReady(5)
+			go mqRecv(f)
+		}
+	}()
+}
+
+// 接收数据
+func mqRecv(f func(key string, body []byte)) {
+	defer func() {
+		if err := recover(); err != nil {
+			WriteError("MQ", "Rcv Crash: "+errors.WithStack(err.(error)).Error())
+		}
+		mqRecvWaitLock.Done()
+	}()
+	mqRecvWaitLock.Add(1)
+	rcvMQ, err := mqConsumer.Recv()
+	if err != nil {
+		WriteError("MQ", "Rcv Err: "+err.Error())
+		return
+	}
+	for d := range rcvMQ {
+		WriteDebug("MQ", "Debug-R:"+rabbitConf.addr+"|"+d.RoutingKey+"|"+base64.StdEncoding.EncodeToString(d.Body))
+		f(d.RoutingKey, d.Body)
+	}
 }
 
 // ProducerIsReady 返回ProducerIsReady可用状态
@@ -140,7 +178,7 @@ func BindRabbitMQ(keys ...string) {
 	}
 }
 
-// ReadRabbitMQ 接收消费者数据
+// ReadRabbitMQ 获得消费者消息通道 (Obsolete,please just call RecvRabbitMQ(func(key string,body []body)))
 func ReadRabbitMQ() (<-chan amqp.Delivery, error) {
 	if !ConsumerIsReady() {
 		return nil, fmt.Errorf("Consumer is not ready")
