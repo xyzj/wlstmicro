@@ -5,6 +5,7 @@ import (
 	"io"
 	"io/ioutil"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 
@@ -193,6 +194,7 @@ func (l *StdLogger) SystemFormat(f string, msg ...interface{}) {
 }
 
 func init() {
+	runtime.GOMAXPROCS(runtime.NumCPU())
 	// 创建固定目录
 	gopsu.DefaultConfDir, gopsu.DefaultLogDir, gopsu.DefaultCacheDir = gopsu.MakeRuntimeDirs(".")
 	// 配置默认ca文件路径
