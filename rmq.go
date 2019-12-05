@@ -188,7 +188,7 @@ func ReadRabbitMQ() (<-chan amqp.Delivery, error) {
 
 // WriteRabbitMQ 写mq
 func WriteRabbitMQ(key string, value []byte, expire time.Duration) {
-	if !ConsumerIsReady() {
+	if !ProducerIsReady() {
 		return
 	}
 	key = AppendRootPathRabbit(key)
