@@ -37,6 +37,9 @@ func NewMysqlClient(mark string) bool {
 		CacheDir:    gopsu.DefaultCacheDir,
 		CacheHead:   "gc" + mark,
 		Timeout:     120,
+		Logger: &StdLogger{
+			Name: "SQL",
+		},
 	}
 	switch dbConf.driver {
 	case "mssql":
