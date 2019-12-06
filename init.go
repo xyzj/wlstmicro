@@ -1,13 +1,16 @@
 package wlstmicro
 
 import (
+	"crypto/tls"
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net/http"
 	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/xyzj/gopsu"
 )
@@ -113,8 +116,9 @@ var (
 
 	microLog *gopsu.MxLog
 
-	MainPort int
-	LogLevel int
+	MainPort   int
+	LogLevel   int
+	HTTPClient *http.Client
 )
 
 // StdLogger StdLogger
@@ -234,6 +238,14 @@ func init() {
 	}
 	if gopsu.IsExist(filepath.Join(baseCAPath, "rmq-ca.pem")) {
 		RMQTLS.ClientCA = filepath.Join(baseCAPath, "rmq-ca.pem")
+	}
+	HTTPClient = &http.Client{
+		Timeout: time.Duration(time.Second * 60),
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
+		},
 	}
 }
 
