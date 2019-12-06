@@ -242,6 +242,7 @@ func init() {
 	HTTPClient = &http.Client{
 		Timeout: time.Duration(time.Second * 60),
 		Transport: &http.Transport{
+			IdleConnTimeout: time.Minute,
 			TLSClientConfig: &tls.Config{
 				InsecureSkipVerify: true,
 			},

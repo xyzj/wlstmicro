@@ -2,7 +2,6 @@ package wlstmicro
 
 import (
 	"bytes"
-	"crypto/tls"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -22,22 +21,25 @@ func CheckUUID() gin.HandlerFunc {
 			s, err := PickerDetail("usermanager")
 			if err != nil {
 				c.Set("status", 0)
-				c.Set("detail", "User-Token illegal |"+err.Error())
+				c.Set("detail", err.Error())
 				c.AbortWithStatusJSON(200, c.Keys)
 				return
 			}
 			s += "/usermanager/v1/user/verify?uuid=" + uuid
-			resp, err := http.Get(s)
+			var req *http.Request
+			req, _ = http.NewRequest("GET", s, strings.NewReader(""))
+			req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+			resp, err := HTTPClient.Do(req)
 			if err != nil {
 				c.Set("status", 0)
-				c.Set("detail", "User-Token illegal |"+err.Error())
+				c.Set("detail", "verify request error |"+err.Error())
 				c.AbortWithStatusJSON(200, c.Keys)
 				return
 			}
 			b, err := ioutil.ReadAll(resp.Body)
 			if err != nil {
 				c.Set("status", 0)
-				c.Set("detail", "User-Token illegal |"+err.Error())
+				c.Set("detail", "verify read error |"+err.Error())
 				c.AbortWithStatusJSON(200, c.Keys)
 				return
 			}
@@ -59,6 +61,10 @@ func CheckUUID() gin.HandlerFunc {
 			Key:   "_userTokenName",
 			Value: gjson.Parse(x).Get("user_name").String(),
 		})
+		c.Params = append(c.Params, gin.Param{
+			Key:   "_userAsAdmin",
+			Value: gjson.Parse(x).Get("asadmin").String(),
+		})
 	}
 }
 
@@ -72,19 +78,11 @@ func GoUUID(uuid, username string) (string, bool) {
 		WriteError("CORE", "can not found server usermanager")
 		return "", false
 	}
-	var client = &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true,
-			},
-		},
-		Timeout: time.Duration(time.Second * 30),
-	}
 	var req *http.Request
 	req, _ = http.NewRequest("GET", addr+"/usermanager/v1/user/fixed/login?user_name="+username, strings.NewReader(""))
-	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Add("Legal-High", gopsu.CalculateSecurityCode("m", time.Now().Month().String(), 0)[0])
-	resp, err := client.Do(req)
+	resp, err := HTTPClient.Do(req)
 	if err != nil {
 		WriteError("CORE", "get uuid error:"+err.Error())
 		return "", false
