@@ -106,6 +106,9 @@ func NewMQConsumer(svrName string) bool {
 // RecvRabbitMQ 接收消息
 // f: 消息处理方法，key为消息过滤器，body为消息体
 func RecvRabbitMQ(f func(key string, body []byte)) {
+	if !ConsumerIsReady() {
+		return
+	}
 	go func() {
 		defer func() {
 			if err := recover(); err != nil {
