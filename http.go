@@ -75,7 +75,7 @@ func GoUUID(uuid, username string) (string, bool) {
 	}
 	addr, err := PickerDetail("usermanager")
 	if err != nil {
-		WriteError("CORE", "can not found server usermanager")
+		WriteError("ETCD", "can not found server usermanager")
 		return "", false
 	}
 	var req *http.Request
