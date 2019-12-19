@@ -222,3 +222,11 @@ func PubEvent(eventid, status int, key, username, detail, from, jsdata string) {
 	})
 	WriteRabbitMQ(key, []byte(js), time.Minute*10)
 }
+
+// ClearQueue 清空队列
+func ClearQueue() {
+	if !ConsumerIsReady() {
+		return
+	}
+	mqConsumer.ClearQueue()
+}
