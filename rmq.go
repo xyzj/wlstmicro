@@ -181,6 +181,19 @@ func BindRabbitMQ(keys ...string) {
 	}
 }
 
+// UnBindRabbitMQ 解除绑定消费者key
+func UnBindRabbitMQ(keys ...string) {
+	if !ConsumerIsReady() {
+		return
+	}
+	for _, v := range keys {
+		if strings.TrimSpace(v) == "" {
+			continue
+		}
+		mqConsumer.UnBindKey(AppendRootPathRabbit(v))
+	}
+}
+
 // ReadRabbitMQ 获得消费者消息通道 (Obsolete,please just call RecvRabbitMQ(func(key string,body []body)))
 func ReadRabbitMQ() (<-chan amqp.Delivery, error) {
 	if !ConsumerIsReady() {
