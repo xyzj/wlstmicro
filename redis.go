@@ -113,7 +113,7 @@ func ReadAllRedisKeys(key string) *redis.StringSliceCmd {
 	if !redisConf.enable {
 		return &redis.StringSliceCmd{}
 	}
-	return redisClient.Keys(key)
+	return redisClient.Keys(AppendRootPathRedis(key))
 }
 
 // ReadAllRedis 模糊读redis
