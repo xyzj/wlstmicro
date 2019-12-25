@@ -218,7 +218,7 @@ func WriteRabbitMQ(key string, value []byte, expire time.Duration) {
 			Body:         value,
 		},
 	})
-	WriteInfo("MQ", "S:"+key+"|"+mq.FormatMQBody(value))
+	// WriteInfo("MQ", "S:"+key+"|"+mq.FormatMQBody(value))
 }
 
 // PubEvent 事件id，状态，过滤器，用户名，详细，来源ip，额外数据
