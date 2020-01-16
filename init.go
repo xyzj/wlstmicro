@@ -230,10 +230,6 @@ func init() {
 	if gopsu.IsExist(filepath.Join(baseCAPath, "http-ca.pem")) {
 		HTTPTLS.ClientCA = filepath.Join(baseCAPath, "http-ca.pem")
 	}
-	if *domainName != "" {
-		HTTPTLS.Cert = filepath.Join(baseCAPath, *domainName+".pem")
-		HTTPTLS.Key = filepath.Join(baseCAPath, *domainName+"-key.pem")
-	}
 	GRPCTLS = &tlsFiles{
 		Cert:     filepath.Join(baseCAPath, "grpc.pem"),
 		Key:      filepath.Join(baseCAPath, "grpc-key.pem"),
@@ -284,6 +280,10 @@ func LoadConfigure(f string, p, l int, clientca string) {
 		}
 	}
 	HTTPTLS.ClientCA = clientca
+	if *domainName != "" {
+		HTTPTLS.Cert = filepath.Join(baseCAPath, *domainName+".pem")
+		HTTPTLS.Key = filepath.Join(baseCAPath, *domainName+"-key.pem")
+	}
 	if rabbitConf.gpsTiming != 0 {
 		go newGPSConsumer(strconv.Itoa(p))
 	}
