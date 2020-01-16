@@ -2,6 +2,7 @@ package wlstmicro
 
 import (
 	"crypto/tls"
+	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -99,8 +100,7 @@ type rabbitConfigure struct {
 
 // 本地变量
 var (
-	StandAloneMode = gopsu.IsExist(".standalone")
-	baseCAPath     string
+	baseCAPath string
 
 	ETCDTLS    *tlsFiles
 	HTTPTLS    *tlsFiles
@@ -119,6 +119,12 @@ var (
 	MainPort   int
 	LogLevel   int
 	HTTPClient *http.Client
+)
+
+// 共用参数
+var (
+	// ForceHTTP 强制http
+	ForceHTTP = flag.Bool("forcehttp", false, "set true to use HTTP anyway.")
 )
 
 // StdLogger StdLogger
