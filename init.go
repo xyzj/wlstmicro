@@ -124,7 +124,8 @@ var (
 // 共用参数
 var (
 	// ForceHTTP 强制http
-	ForceHTTP = flag.Bool("forcehttp", false, "set true to use HTTP anyway.")
+	ForceHTTP  = flag.Bool("forcehttp", false, "set true to use HTTP anyway.")
+	domainName = flag.String("domain", "", "set doman name.")
 )
 
 // StdLogger StdLogger
@@ -228,6 +229,10 @@ func init() {
 	}
 	if gopsu.IsExist(filepath.Join(baseCAPath, "http-ca.pem")) {
 		HTTPTLS.ClientCA = filepath.Join(baseCAPath, "http-ca.pem")
+	}
+	if *domainName != "" {
+		HTTPTLS.Cert = filepath.Join(baseCAPath, *domainName+".pem")
+		HTTPTLS.Key = filepath.Join(baseCAPath, *domainName+"-key.pem")
 	}
 	GRPCTLS = &tlsFiles{
 		Cert:     filepath.Join(baseCAPath, "grpc.pem"),
