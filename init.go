@@ -7,7 +7,6 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strconv"
@@ -127,7 +126,6 @@ var (
 	// ForceHTTP 强制http
 	ForceHTTP  = flag.Bool("forcehttp", false, "set true to use HTTP anyway.")
 	domainName = flag.String("domain", "", "set doman name.")
-	autoRenew  = flag.Bool("renew", false, "auto renew use dns namesilo")
 )
 
 // StdLogger StdLogger
@@ -288,23 +286,6 @@ func LoadConfigure(f string, p, l int, clientca string) {
 	}
 	if rabbitConf.gpsTiming != 0 {
 		go newGPSConsumer(strconv.Itoa(p))
-	}
-	// 使用lego自动更新证书
-	if *autoRenew {
-		go func() {
-			defer func() {
-				if err := recover(); err != nil {
-					ioutil.WriteFile("sslrenew.log", []byte(err.(error).Error()), 0664)
-				}
-			}()
-			for {
-				time.Sleep(time.Hour * 24 * 30)
-				if gopsu.IsExist(filepath.Join(gopsu.GetExecDir(), "lego.exe")) && gopsu.IsExist(filepath.Join(gopsu.GetExecDir(), "sslrenew.bat")) {
-					cmd := exec.Command(filepath.Join(gopsu.GetExecDir(), "sslrenew.bat"))
-					cmd.Start()
-				}
-			}
-		}()
 	}
 }
 
