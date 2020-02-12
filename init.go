@@ -111,10 +111,12 @@ var (
 	redisConf  = &redisConfigure{}
 	etcdConf   = &etcdConfigure{}
 	rabbitConf = &rabbitConfigure{}
-
+	//	根路径
 	rootPath = "wlst-micro"
-
+	// 日志
 	microLog *gopsu.MxLog
+	// 域名
+	domainName = ""
 
 	MainPort   int
 	LogLevel   int
@@ -124,8 +126,7 @@ var (
 // 共用参数
 var (
 	// ForceHTTP 强制http
-	ForceHTTP  = flag.Bool("forcehttp", false, "set true to use HTTP anyway.")
-	domainName = flag.String("domain", "", "set doman name.")
+	ForceHTTP = flag.Bool("forcehttp", false, "set true to use HTTP anyway.")
 )
 
 // StdLogger StdLogger
@@ -266,6 +267,7 @@ func LoadConfigure(f string, p, l int, clientca string) {
 	}
 	AppConf, _ = gopsu.LoadConfig(f)
 	rootPath = AppConf.GetItemDefault("root_path", "wlst-micro", "etcd/mq/redis注册根路径")
+	domainName = AppConf.GetItemDefault("domain_name", "", "set the domain name, cert and key file name should be xxx.crt & xxx.key")
 	rabbitConf.gpsTiming, _ = strconv.ParseInt(AppConf.GetItemDefault("mq_gpstiming", "0", "是否使用广播的gps时间进行对时操作,0-不启用，1-启用（30～900s内进行矫正），2-忽略误差范围强制矫正"), 10, 0)
 	AppConf.Save()
 	MainPort = p
@@ -280,9 +282,9 @@ func LoadConfigure(f string, p, l int, clientca string) {
 		}
 	}
 	HTTPTLS.ClientCA = clientca
-	if *domainName != "" {
-		HTTPTLS.Cert = filepath.Join(baseCAPath, *domainName+".crt")
-		HTTPTLS.Key = filepath.Join(baseCAPath, *domainName+".key")
+	if domainName != "" {
+		HTTPTLS.Cert = filepath.Join(baseCAPath, domainName+".crt")
+		HTTPTLS.Key = filepath.Join(baseCAPath, domainName+".key")
 	}
 	if rabbitConf.gpsTiming != 0 {
 		go newGPSConsumer(strconv.Itoa(p))
