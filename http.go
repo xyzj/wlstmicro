@@ -22,6 +22,7 @@ func CheckUUID() gin.HandlerFunc {
 			if err != nil {
 				c.Set("status", 0)
 				c.Set("detail", err.Error())
+				c.Set("xfile", 1)
 				c.AbortWithStatusJSON(200, c.Keys)
 				return
 			}
@@ -33,6 +34,7 @@ func CheckUUID() gin.HandlerFunc {
 			if err != nil {
 				c.Set("status", 0)
 				c.Set("detail", "verify request error |"+err.Error())
+				c.Set("xfile", 11)
 				c.AbortWithStatusJSON(200, c.Keys)
 				return
 			}
@@ -40,6 +42,7 @@ func CheckUUID() gin.HandlerFunc {
 			if err != nil {
 				c.Set("status", 0)
 				c.Set("detail", "verify read error |"+err.Error())
+				c.Set("xfile", 11)
 				c.AbortWithStatusJSON(200, c.Keys)
 				return
 			}
@@ -48,12 +51,14 @@ func CheckUUID() gin.HandlerFunc {
 		if len(x) == 0 {
 			c.Set("status", 0)
 			c.Set("detail", "User-Token illegal")
+			c.Set("xfile", 11)
 			c.AbortWithStatusJSON(200, c.Keys)
 			return
 		}
 		if time.Now().Unix() > gjson.Parse(x).Get("expire").Int() {
 			c.Set("status", 0)
 			c.Set("detail", "user expired")
+			c.Set("xfile", 11)
 			c.AbortWithStatusJSON(200, c.Keys)
 			return
 		}
@@ -95,4 +100,17 @@ func GoUUID(uuid, username string) (string, bool) {
 		return "", false
 	}
 	return b.String(), true
+}
+
+// DealWithSQLError 统一处理sql执行错误问题
+func DealWithSQLError(c *gin.Context, err error) bool {
+	if err != nil {
+		WriteError("SQL", c.Request.RequestURI+"|"+err.Error())
+		c.Set("status", 0)
+		c.Set("detail", "sql error")
+		c.Set("xfile", 3)
+		c.PureJSON(200, c.Keys)
+		return true
+	}
+	return false
 }
