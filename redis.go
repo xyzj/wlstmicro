@@ -54,6 +54,22 @@ func AppendRootPathRedis(key string) string {
 	return key
 }
 
+//ExpireRedis 更新redis有效期
+func ExpireRedis(key string, expire time.Duration) error {
+	if !redisConf.enable {
+		return nil
+	}
+	if redisClient == nil {
+		return fmt.Errorf("redis is not ready")
+	}
+	err := redisClient.Expire(key, expire).Err()
+	if err != nil {
+		WriteError("REDIS", "Failed update redis expire: "+err.Error())
+		return err
+	}
+	return nil
+}
+
 // WriteRedis 写redis
 func WriteRedis(key string, value interface{}, expire time.Duration) error {
 	if !redisConf.enable {

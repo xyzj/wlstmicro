@@ -2,7 +2,6 @@ package wlstmicro
 
 import (
 	"bytes"
-	"io/ioutil"
 	"net/http"
 	"strings"
 	"time"
@@ -16,38 +15,7 @@ import (
 func CheckUUID() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		uuid := c.GetHeader("User-Token")
-		x, err := ReadRedis("usermanager/legal/" + gopsu.GetMD5(uuid))
-		if err != nil { // redis读取失败，从usermanager里查询
-			s, err := PickerDetail("usermanager")
-			if err != nil {
-				c.Set("status", 0)
-				c.Set("detail", err.Error())
-				c.Set("xfile", 1)
-				c.AbortWithStatusJSON(200, c.Keys)
-				return
-			}
-			s += "/usermanager/v1/user/verify?uuid=" + uuid
-			var req *http.Request
-			req, _ = http.NewRequest("GET", s, strings.NewReader(""))
-			req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-			resp, err := HTTPClient.Do(req)
-			if err != nil {
-				c.Set("status", 0)
-				c.Set("detail", "verify request error |"+err.Error())
-				c.Set("xfile", 11)
-				c.AbortWithStatusJSON(200, c.Keys)
-				return
-			}
-			b, err := ioutil.ReadAll(resp.Body)
-			if err != nil {
-				c.Set("status", 0)
-				c.Set("detail", "verify read error |"+err.Error())
-				c.Set("xfile", 11)
-				c.AbortWithStatusJSON(200, c.Keys)
-				return
-			}
-			x = string(b)
-		}
+		x, _ := ReadRedis("usermanager/legal/" + gopsu.GetMD5(uuid))
 		if len(x) == 0 {
 			c.Set("status", 0)
 			c.Set("detail", "User-Token illegal")
@@ -62,14 +30,32 @@ func CheckUUID() gin.HandlerFunc {
 			c.AbortWithStatusJSON(200, c.Keys)
 			return
 		}
+		ans := gjson.Parse(x)
 		c.Params = append(c.Params, gin.Param{
 			Key:   "_userTokenName",
-			Value: gjson.Parse(x).Get("user_name").String(),
+			Value: ans.Get("user_name").String(),
 		})
 		c.Params = append(c.Params, gin.Param{
 			Key:   "_userAsAdmin",
-			Value: gjson.Parse(x).Get("asadmin").String(),
+			Value: ans.Get("asadmin").String(),
 		})
+		c.Params = append(c.Params, gin.Param{
+			Key:   "_userRoleID",
+			Value: ans.Get("role_id").String(),
+		})
+		authbinding := make([]string, 0)
+		for _, v := range ans.Get("auth_binding").Array() {
+			authbinding = append(authbinding, v.String())
+		}
+		c.Params = append(c.Params, gin.Param{
+			Key:   "_authBinding",
+			Value: strings.Join(authbinding, ","),
+		})
+		// 更新redis的对应键值的有效期
+		go func() {
+			defer func() { recover() }()
+			ExpireRedis("usermanager/legal/"+gopsu.GetMD5(uuid), time.Minute*30)
+		}()
 	}
 }
 
@@ -113,4 +99,12 @@ func DealWithSQLError(c *gin.Context, err error) bool {
 		return true
 	}
 	return false
+}
+
+// JSON2Key json字符串赋值到gin.key
+func JSON2Key(c *gin.Context, s string) {
+	gjson.Parse(s).ForEach(func(key, value gjson.Result) bool {
+		c.Set(key.String(), value.Value())
+		return true
+	})
 }
