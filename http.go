@@ -23,13 +23,6 @@ func CheckUUID() gin.HandlerFunc {
 			c.AbortWithStatusJSON(200, c.Keys)
 			return
 		}
-		if time.Now().Unix() > gjson.Parse(x).Get("expire").Int() {
-			c.Set("status", 0)
-			c.Set("detail", "user expired")
-			c.Set("xfile", 11)
-			c.AbortWithStatusJSON(200, c.Keys)
-			return
-		}
 		ans := gjson.Parse(x)
 		c.Params = append(c.Params, gin.Param{
 			Key:   "_userTokenName",
@@ -49,6 +42,14 @@ func CheckUUID() gin.HandlerFunc {
 		}
 		c.Params = append(c.Params, gin.Param{
 			Key:   "_authBinding",
+			Value: strings.Join(authbinding, ","),
+		})
+		enableapi := make([]string, 0)
+		for _, v := range ans.Get("enable_api").Array() {
+			enableapi = append(enableapi, v.String())
+		}
+		c.Params = append(c.Params, gin.Param{
+			Key:   "_enableAPI",
 			Value: strings.Join(authbinding, ","),
 		})
 		// 更新redis的对应键值的有效期
