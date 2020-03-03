@@ -14,6 +14,9 @@ import (
 // CheckUUID 通过uuid获取用户信息
 func CheckUUID() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		if strings.Contains(c.Request.RequestURI, "usermanager") {
+			return
+		}
 		uuid := c.GetHeader("User-Token")
 		x, _ := ReadRedis("usermanager/legal/" + gopsu.GetMD5(uuid))
 		if len(x) == 0 {
