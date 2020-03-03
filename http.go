@@ -12,55 +12,50 @@ import (
 )
 
 // CheckUUID 通过uuid获取用户信息
-func CheckUUID() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		if strings.Contains(c.Request.RequestURI, "usermanager") {
-			return
-		}
-		uuid := c.GetHeader("User-Token")
-		x, _ := ReadRedis("usermanager/legal/" + gopsu.GetMD5(uuid))
-		if len(x) == 0 {
-			c.Set("status", 0)
-			c.Set("detail", "User-Token illegal")
-			c.Set("xfile", 11)
-			c.AbortWithStatusJSON(200, c.Keys)
-			return
-		}
-		ans := gjson.Parse(x)
-		c.Params = append(c.Params, gin.Param{
-			Key:   "_userTokenName",
-			Value: ans.Get("user_name").String(),
-		})
-		c.Params = append(c.Params, gin.Param{
-			Key:   "_userAsAdmin",
-			Value: ans.Get("asadmin").String(),
-		})
-		c.Params = append(c.Params, gin.Param{
-			Key:   "_userRoleID",
-			Value: ans.Get("role_id").String(),
-		})
-		authbinding := make([]string, 0)
-		for _, v := range ans.Get("auth_binding").Array() {
-			authbinding = append(authbinding, v.String())
-		}
-		c.Params = append(c.Params, gin.Param{
-			Key:   "_authBinding",
-			Value: strings.Join(authbinding, ","),
-		})
-		enableapi := make([]string, 0)
-		for _, v := range ans.Get("enable_api").Array() {
-			enableapi = append(enableapi, v.String())
-		}
-		c.Params = append(c.Params, gin.Param{
-			Key:   "_enableAPI",
-			Value: strings.Join(authbinding, ","),
-		})
-		// 更新redis的对应键值的有效期
-		go func() {
-			defer func() { recover() }()
-			ExpireRedis("usermanager/legal/"+gopsu.GetMD5(uuid), time.Minute*30)
-		}()
+func CheckUUID(c *gin.Context) {
+	uuid := c.GetHeader("User-Token")
+	x, _ := ReadRedis("usermanager/legal/" + gopsu.GetMD5(uuid))
+	if len(x) == 0 {
+		c.Set("status", 0)
+		c.Set("detail", "User-Token illegal")
+		c.Set("xfile", 11)
+		c.AbortWithStatusJSON(200, c.Keys)
+		return
 	}
+	ans := gjson.Parse(x)
+	c.Params = append(c.Params, gin.Param{
+		Key:   "_userTokenName",
+		Value: ans.Get("user_name").String(),
+	})
+	c.Params = append(c.Params, gin.Param{
+		Key:   "_userAsAdmin",
+		Value: ans.Get("asadmin").String(),
+	})
+	c.Params = append(c.Params, gin.Param{
+		Key:   "_userRoleID",
+		Value: ans.Get("role_id").String(),
+	})
+	authbinding := make([]string, 0)
+	for _, v := range ans.Get("auth_binding").Array() {
+		authbinding = append(authbinding, v.String())
+	}
+	c.Params = append(c.Params, gin.Param{
+		Key:   "_authBinding",
+		Value: strings.Join(authbinding, ","),
+	})
+	enableapi := make([]string, 0)
+	for _, v := range ans.Get("enable_api").Array() {
+		enableapi = append(enableapi, v.String())
+	}
+	c.Params = append(c.Params, gin.Param{
+		Key:   "_enableAPI",
+		Value: strings.Join(authbinding, ","),
+	})
+	// 更新redis的对应键值的有效期
+	go func() {
+		defer func() { recover() }()
+		ExpireRedis("usermanager/legal/"+gopsu.GetMD5(uuid), time.Minute*30)
+	}()
 }
 
 // GoUUID 获取特定uuid
