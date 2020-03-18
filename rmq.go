@@ -42,6 +42,7 @@ func NewMQProducer() bool {
 		rabbitConf.addr = strings.Replace(rabbitConf.addr, "5672", "5671", 1)
 	}
 	AppConf.Save()
+	rabbitConf.show()
 	if !rabbitConf.enable {
 		return false
 	}
