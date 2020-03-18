@@ -31,6 +31,7 @@ func NewETCDClient(svrName, svrType, svrProtocol string) bool {
 		AppConf.UpdateItem("etcd_reg", etcdConf.regAddr)
 	}
 	AppConf.Save()
+	etcdConf.show()
 	if !etcdConf.enable {
 		return false
 	}
@@ -91,4 +92,9 @@ func PickerDetail(svrName string) (string, error) {
 		return "", err
 	}
 	return addr, nil
+}
+
+// ViewETCDConfig 查看ETCD配置,返回json字符串
+func ViewETCDConfig() string {
+	return etcdConf.forshow
 }

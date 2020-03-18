@@ -27,6 +27,7 @@ func NewRedisClient() bool {
 	redisConf.database, _ = strconv.Atoi(AppConf.GetItemDefault("redis_db", "0", "redis数据库名称"))
 	redisConf.enable, _ = strconv.ParseBool(AppConf.GetItemDefault("redis_enable", "true", "是否启用redis"))
 	AppConf.Save()
+	redisConf.show()
 	if !redisConf.enable {
 		return false
 	}
@@ -156,4 +157,9 @@ func ReadAllRedis(key string) ([]string, error) {
 // RedisIsReady 返回redis可用状态
 func RedisIsReady() bool {
 	return redisClient != nil
+}
+
+// ViewRedisConfig 查看redis配置,返回json字符串
+func ViewRedisConfig() string {
+	return redisConf.forshow
 }

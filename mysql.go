@@ -25,6 +25,7 @@ func NewMysqlClient(mark string) bool {
 	dbConf.driver = AppConf.GetItemDefault("db_drive", "mysql", "sql数据库驱动，mysql 或 mssql")
 	dbConf.enable, _ = strconv.ParseBool(AppConf.GetItemDefault("db_enable", "true", "是否启用sql"))
 	AppConf.Save()
+	dbConf.show()
 	if !dbConf.enable {
 		return false
 	}
@@ -62,4 +63,9 @@ func MysqlIsReady() bool {
 		return MysqlClient.IsReady()
 	}
 	return false
+}
+
+// ViewSSQLQLConfig 查看sql配置,返回json字符串
+func ViewSSQLQLConfig() string {
+	return dbConf.forshow
 }

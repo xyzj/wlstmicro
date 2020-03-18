@@ -84,6 +84,7 @@ func NewMQConsumer(svrName string) bool {
 		rabbitConf.addr = strings.Replace(rabbitConf.addr, "5672", "5671", 1)
 	}
 	AppConf.Save()
+	rabbitConf.show()
 	// 若不启用mq功能，则退出
 	if !rabbitConf.enable {
 		return false
@@ -242,4 +243,9 @@ func ClearQueue() {
 		return
 	}
 	mqConsumer.ClearQueue()
+}
+
+// ViewRabbitMQConfig 查看rabbitmq配置,返回json字符串
+func ViewRabbitMQConfig() string {
+	return rabbitConf.forshow
 }

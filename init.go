@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/tidwall/sjson"
 	"github.com/xyzj/gopsu"
 )
 
@@ -28,6 +29,7 @@ type tlsFiles struct {
 
 // 数据库配置
 type dbConfigure struct {
+	forshow string
 	// 数据库地址
 	addr string
 	// 登录用户名
@@ -44,8 +46,18 @@ type dbConfigure struct {
 	usetls bool
 }
 
+func (conf *dbConfigure) show() string {
+	conf.forshow, _ = sjson.Set("", "addr", dbConf.addr)
+	conf.forshow, _ = sjson.Set(conf.forshow, "user", CWorker.Encrypt(dbConf.user))
+	conf.forshow, _ = sjson.Set(conf.forshow, "pwd", CWorker.Encrypt(dbConf.pwd))
+	conf.forshow, _ = sjson.Set(conf.forshow, "dbname", dbConf.database)
+	conf.forshow, _ = sjson.Set(conf.forshow, "driver", dbConf.driver)
+	return conf.forshow
+}
+
 // etcd配置
 type etcdConfigure struct {
+	forshow string
 	// etcd服务地址
 	addr string
 	// 是否启用tls
@@ -58,8 +70,15 @@ type etcdConfigure struct {
 	root string
 }
 
+func (conf *etcdConfigure) show() string {
+	conf.forshow, _ = sjson.Set("", "addr", etcdConf.addr)
+	conf.forshow, _ = sjson.Set(conf.forshow, "root", etcdConf.root)
+	return conf.forshow
+}
+
 // redis配置
 type redisConfigure struct {
+	forshow string
 	// redis服务地址
 	addr string
 	// 访问密码
@@ -70,8 +89,16 @@ type redisConfigure struct {
 	enable bool
 }
 
+func (conf *redisConfigure) show() string {
+	conf.forshow, _ = sjson.Set("", "addr", redisConf.addr)
+	conf.forshow, _ = sjson.Set(conf.forshow, "pwd", CWorker.Encrypt(redisConf.pwd))
+	conf.forshow, _ = sjson.Set(conf.forshow, "dbname", redisConf.database)
+	return conf.forshow
+}
+
 // rabbitmq配置
 type rabbitConfigure struct {
+	forshow string
 	// rmq服务地址
 	addr string
 	// 登录用户名
@@ -98,6 +125,15 @@ type rabbitConfigure struct {
 	gpsTiming int64
 }
 
+func (conf *rabbitConfigure) show() string {
+	conf.forshow, _ = sjson.Set("", "addr", rabbitConf.addr)
+	conf.forshow, _ = sjson.Set(conf.forshow, "user", CWorker.Encrypt(rabbitConf.user))
+	conf.forshow, _ = sjson.Set(conf.forshow, "pwd", CWorker.Encrypt(rabbitConf.pwd))
+	conf.forshow, _ = sjson.Set(conf.forshow, "vhost", rabbitConf.vhost)
+	conf.forshow, _ = sjson.Set(conf.forshow, "exchange", rabbitConf.exchange)
+	return conf.forshow
+}
+
 // 本地变量
 var (
 	baseCAPath string
@@ -121,6 +157,9 @@ var (
 	MainPort   int
 	LogLevel   int
 	HTTPClient *http.Client
+
+	// 加密解密worker
+	CWorker = gopsu.GetNewCryptoWorker(gopsu.CryptoAES128CBC)
 )
 
 // 共用参数
@@ -207,6 +246,7 @@ func (l *StdLogger) SystemFormat(f string, msg ...interface{}) {
 
 func init() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
+	CWorker.SetKey("X3}UN[2,pXe-cBHK/:s3)l2(W;ef+c@z", "GU6NCQT1PI^ck4<iKzMM|u;}61C#5!Tr")
 	// 创建固定目录
 	gopsu.DefaultConfDir, gopsu.DefaultLogDir, gopsu.DefaultCacheDir = gopsu.MakeRuntimeDirs(".")
 	// 配置默认ca文件路径
