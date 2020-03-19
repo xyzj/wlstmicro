@@ -18,7 +18,6 @@ func CheckUUID(c *gin.Context) {
 	if len(x) == 0 {
 		c.Set("status", 0)
 		c.Set("detail", "User-Token illegal")
-		c.Set("xfile", 11)
 		c.AbortWithStatusJSON(200, c.Keys)
 		return
 	}
@@ -93,7 +92,6 @@ func DealWithSQLError(c *gin.Context, err error) bool {
 		WriteError("SQL", c.Request.RequestURI+"|"+err.Error())
 		c.Set("status", 0)
 		c.Set("detail", "sql error")
-		c.Set("xfile", 3)
 		c.PureJSON(200, c.Keys)
 		return true
 	}
