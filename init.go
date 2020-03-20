@@ -246,7 +246,7 @@ func (l *StdLogger) SystemFormat(f string, msg ...interface{}) {
 
 func init() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
-	CWorker.SetKey("X3}UN[2,pXe-cBHK/:s3)l2(W;ef+c@z", "GU6NCQT1PI^ck4<iKzMM|u;}61C#5!Tr")
+	CWorker.SetKey("(NMNle+XW!ykVjf1", "Zq0V+,.2u|3sGAzH")
 	// 创建固定目录
 	gopsu.DefaultConfDir, gopsu.DefaultLogDir, gopsu.DefaultCacheDir = gopsu.MakeRuntimeDirs(".")
 	// 配置默认ca文件路径
