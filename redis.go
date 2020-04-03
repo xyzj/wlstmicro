@@ -63,7 +63,7 @@ func ExpireRedis(key string, expire time.Duration) error {
 	if redisClient == nil {
 		return fmt.Errorf("redis is not ready")
 	}
-	err := redisClient.Expire(key, expire).Err()
+	err := redisClient.Expire(AppendRootPathRedis(key), expire).Err()
 	if err != nil {
 		WriteError("REDIS", "Failed update redis expire: "+err.Error())
 		return err
