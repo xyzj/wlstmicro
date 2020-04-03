@@ -52,7 +52,11 @@ func CheckUUID(c *gin.Context) {
 	})
 	// 更新redis的对应键值的有效期
 	go func() {
-		defer func() { recover() }()
+		defer func() {
+			if err := recover(); err != nil {
+				WriteError("REDIS", err.(error).Error())
+			}
+		}()
 		ExpireRedis("usermanager/legal/"+gopsu.GetMD5(uuid), time.Minute*30)
 	}()
 }
