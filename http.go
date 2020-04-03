@@ -57,7 +57,9 @@ func CheckUUID(c *gin.Context) {
 				WriteError("REDIS", err.(error).Error())
 			}
 		}()
-		ExpireRedis("usermanager/legal/"+gopsu.GetMD5(uuid), time.Minute*30)
+		if ans.Get("source").String() != "local" {
+			ExpireRedis("usermanager/legal/"+gopsu.GetMD5(uuid), time.Minute*30)
+		}
 	}()
 }
 
