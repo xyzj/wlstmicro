@@ -65,7 +65,7 @@ func ExpireRedis(key string, expire time.Duration) error {
 	}
 	err := redisClient.Expire(AppendRootPathRedis(key), expire).Err()
 	if err != nil {
-		WriteError("REDIS", "Failed update redis expire: "+err.Error())
+		WriteError("REDIS", "Failed update redis expire: "+key+"|"+err.Error())
 		return err
 	}
 	return nil
@@ -81,7 +81,7 @@ func WriteRedis(key string, value interface{}, expire time.Duration) error {
 	}
 	err := redisClient.Set(AppendRootPathRedis(key), value, expire).Err()
 	if err != nil {
-		WriteError("REDIS", "Failed write redis data: "+err.Error())
+		WriteError("REDIS", "Failed write redis data: "+key+"|"+err.Error())
 		return err
 	}
 	return nil
@@ -96,7 +96,10 @@ func EraseRedis(key ...string) {
 	for k, v := range key {
 		keys[k] = AppendRootPathRedis(v)
 	}
-	redisClient.Del(keys...)
+	err := redisClient.Del(keys...).Err()
+	if err != nil {
+		WriteError("REDIS", fmt.Sprintf("Failed erase redis data: %+v|%s", keys, err.Error()))
+	}
 }
 
 // EraseAllRedis 模糊删除
@@ -108,7 +111,10 @@ func EraseAllRedis(key string) {
 	if val.Err() != nil {
 		return
 	}
-	redisClient.Del(val.Val()...)
+	err := redisClient.Del(val.Val()...).Err()
+	if err != nil {
+		WriteError("REDIS", "Failed erase all redis data: "+key+"|"+err.Error())
+	}
 }
 
 // ReadRedis 读redis
