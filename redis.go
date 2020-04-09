@@ -169,3 +169,9 @@ func RedisIsReady() bool {
 func ViewRedisConfig() string {
 	return redisConf.forshow
 }
+
+// ExpireUserToken 更新token有效期
+func ExpireUserToken(token string) {
+	// 更新redis的对应键值的有效期
+	go ExpireRedis("usermanager/legal/"+MD5Worker.Hash([]byte(token)), time.Minute*30)
+}

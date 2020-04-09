@@ -27,7 +27,7 @@ func newGPSConsumer(svrName string) {
 	rabbitConf.vhost = AppConf.GetItemDefault("mq_vhost", "", "mq虚拟域名")
 	rabbitConf.exchange = AppConf.GetItemDefault("mq_exchange", "luwak_topic", "mq交换机名称")
 	AppConf.Save()
-	queue := rootPath + "_" + svrName + "_gps_" + gopsu.GetMD5(time.Now().Format("150405000"))
+	queue := rootPath + "_" + svrName + "_gps_" + MD5Worker.Hash([]byte(time.Now().Format("150405000")))
 	durable := false
 	autodel := true
 	gpsConsumer = mq.NewConsumer(rabbitConf.exchange, fmt.Sprintf("amqp://%s:%s@%s/%s", rabbitConf.user, rabbitConf.pwd, rabbitConf.addr, rabbitConf.vhost), queue, durable, autodel, false)

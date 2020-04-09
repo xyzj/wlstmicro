@@ -159,7 +159,8 @@ var (
 	HTTPClient *http.Client
 
 	// 加密解密worker
-	CWorker = gopsu.GetNewCryptoWorker(gopsu.CryptoAES128CBC)
+	CWorker   = gopsu.GetNewCryptoWorker(gopsu.CryptoAES128CBC)
+	MD5Worker = gopsu.GetNewCryptoWorker(gopsu.CryptoMD5)
 )
 
 // 共用参数

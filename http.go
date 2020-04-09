@@ -14,7 +14,7 @@ import (
 // CheckUUID 通过uuid获取用户信息
 func CheckUUID(c *gin.Context) {
 	uuid := c.GetHeader("User-Token")
-	x, _ := ReadRedis("usermanager/legal/" + gopsu.GetMD5(uuid))
+	x, _ := ReadRedis("usermanager/legal/" + MD5Worker.Hash([]byte(uuid)))
 	if len(x) == 0 {
 		c.Set("status", 0)
 		c.Set("detail", "User-Token illegal")
@@ -51,16 +51,9 @@ func CheckUUID(c *gin.Context) {
 		Value: strings.Join(authbinding, ","),
 	})
 	// 更新redis的对应键值的有效期
-	go func() {
-		defer func() {
-			if err := recover(); err != nil {
-				WriteError("REDIS", err.(error).Error())
-			}
-		}()
-		if ans.Get("source").String() != "local" {
-			ExpireRedis("usermanager/legal/"+gopsu.GetMD5(uuid), time.Minute*30)
-		}
-	}()
+	// if ans.Get("source").String() != "local" {
+	// 	ExpireUserToken(uuid)
+	// }
 }
 
 // GoUUID 获取特定uuid

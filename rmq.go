@@ -93,7 +93,7 @@ func NewMQConsumer(svrName string) bool {
 	}
 	rabbitConf.queue = rootPath + "_" + svrName
 	if rabbitConf.queueRandom {
-		rabbitConf.queue += "_" + gopsu.GetMD5(time.Now().Format("150405000"))
+		rabbitConf.queue += "_" + MD5Worker.Hash([]byte(time.Now().Format("150405000")))
 		rabbitConf.durable = false
 		rabbitConf.autodel = true
 	}
