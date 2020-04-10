@@ -11,11 +11,33 @@ import (
 	"github.com/xyzj/gopsu"
 )
 
+// RenewUUID 更新uuid时效
+func RenewUUID(c *gin.Context) {
+	uuid := c.GetHeader("User-Token")
+	if len(uuid) != 36 {
+		return
+	}
+	x, err := ReadRedis("usermanager/legal/" + MD5Worker.Hash([]byte(uuid)))
+	if err != nil {
+		return
+	}
+	// 更新redis的对应键值的有效期
+	if gjson.Parse(x).Get("source").String() != "local" {
+		ExpireUserToken(uuid)
+	}
+}
+
 // CheckUUID 通过uuid获取用户信息
 func CheckUUID(c *gin.Context) {
 	uuid := c.GetHeader("User-Token")
-	x, _ := ReadRedis("usermanager/legal/" + MD5Worker.Hash([]byte(uuid)))
-	if len(x) == 0 {
+	if len(uuid) != 36 {
+		c.Set("status", 0)
+		c.Set("detail", "User-Token illegal")
+		c.AbortWithStatusJSON(200, c.Keys)
+		return
+	}
+	x, err := ReadRedis("usermanager/legal/" + MD5Worker.Hash([]byte(uuid)))
+	if err != nil {
 		c.Set("status", 0)
 		c.Set("detail", "User-Token illegal")
 		c.AbortWithStatusJSON(200, c.Keys)
@@ -51,9 +73,9 @@ func CheckUUID(c *gin.Context) {
 		Value: strings.Join(authbinding, ","),
 	})
 	// 更新redis的对应键值的有效期
-	// if ans.Get("source").String() != "local" {
-	// 	ExpireUserToken(uuid)
-	// }
+	if ans.Get("source").String() != "local" {
+		ExpireUserToken(uuid)
+	}
 }
 
 // GoUUID 获取特定uuid
