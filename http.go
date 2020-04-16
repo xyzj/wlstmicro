@@ -11,8 +11,63 @@ import (
 	"github.com/xyzj/gopsu"
 )
 
-// RenewUUID 更新uuid时效
-func RenewUUID(c *gin.Context) {
+// PrepareToken 获取User-Token信息
+func PrepareToken() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		uuid := c.GetHeader("User-Token")
+		if len(uuid) != 36 {
+			return
+		}
+		tokenPath := AppendRootPathRedis("usermanager/legal/" + MD5Worker.Hash([]byte(uuid)))
+		x, err := ReadRedis(tokenPath)
+		if err != nil {
+			return
+		}
+		ans := gjson.Parse(x)
+		if !ans.Exists() {
+			return
+		}
+		c.Params = append(c.Params, gin.Param{
+			Key:   "_userTokenPath",
+			Value: tokenPath,
+		})
+		c.Params = append(c.Params, gin.Param{
+			Key:   "_userTokenName",
+			Value: ans.Get("user_name").String(),
+		})
+		c.Params = append(c.Params, gin.Param{
+			Key:   "_userAsAdmin",
+			Value: ans.Get("asadmin").String(),
+		})
+		c.Params = append(c.Params, gin.Param{
+			Key:   "_userRoleID",
+			Value: ans.Get("role_id").String(),
+		})
+		authbinding := make([]string, 0)
+		for _, v := range ans.Get("auth_binding").Array() {
+			authbinding = append(authbinding, v.String())
+		}
+		c.Params = append(c.Params, gin.Param{
+			Key:   "_authBinding",
+			Value: strings.Join(authbinding, ","),
+		})
+		enableapi := make([]string, 0)
+		for _, v := range ans.Get("enable_api").Array() {
+			enableapi = append(enableapi, v.String())
+		}
+		c.Params = append(c.Params, gin.Param{
+			Key:   "_enableAPI",
+			Value: strings.Join(authbinding, ","),
+		})
+		// 更新redis的对应键值的有效期
+		if ans.Get("source").String() != "local" {
+			ExpireUserToken(uuid)
+		}
+	}
+}
+
+// RenewToken 更新uuid时效
+func RenewToken(c *gin.Context) {
 	uuid := c.GetHeader("User-Token")
 	if len(uuid) != 36 {
 		return
@@ -27,56 +82,15 @@ func RenewUUID(c *gin.Context) {
 	}
 }
 
-// CheckUUID 通过uuid获取用户信息
-func CheckUUID(c *gin.Context) {
-	uuid := c.GetHeader("User-Token")
-	if len(uuid) != 36 {
-		c.Set("status", 0)
-		c.Set("detail", "User-Token illegal")
-		c.Set("xfile", 11)
-		c.AbortWithStatusJSON(200, c.Keys)
-		return
-	}
-	x, err := ReadRedis("usermanager/legal/" + MD5Worker.Hash([]byte(uuid)))
-	if err != nil {
-		c.Set("status", 0)
-		c.Set("detail", "User-Token illegal")
-		c.Set("xfile", 11)
-		c.AbortWithStatusJSON(200, c.Keys)
-		return
-	}
-	ans := gjson.Parse(x)
-	c.Params = append(c.Params, gin.Param{
-		Key:   "_userTokenName",
-		Value: ans.Get("user_name").String(),
-	})
-	c.Params = append(c.Params, gin.Param{
-		Key:   "_userAsAdmin",
-		Value: ans.Get("asadmin").String(),
-	})
-	c.Params = append(c.Params, gin.Param{
-		Key:   "_userRoleID",
-		Value: ans.Get("role_id").String(),
-	})
-	authbinding := make([]string, 0)
-	for _, v := range ans.Get("auth_binding").Array() {
-		authbinding = append(authbinding, v.String())
-	}
-	c.Params = append(c.Params, gin.Param{
-		Key:   "_authBinding",
-		Value: strings.Join(authbinding, ","),
-	})
-	enableapi := make([]string, 0)
-	for _, v := range ans.Get("enable_api").Array() {
-		enableapi = append(enableapi, v.String())
-	}
-	c.Params = append(c.Params, gin.Param{
-		Key:   "_enableAPI",
-		Value: strings.Join(authbinding, ","),
-	})
-	// 更新redis的对应键值的有效期
-	if ans.Get("source").String() != "local" {
-		ExpireUserToken(uuid)
+// CheckToken 通过uuid获取用户信息
+func CheckToken() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if c.Param("_userTokenPath") == "" {
+			c.Set("status", 0)
+			c.Set("detail", "User-Token illegal")
+			c.Set("xfile", 11)
+			c.AbortWithStatusJSON(401, c.Keys)
+		}
 	}
 }
 
