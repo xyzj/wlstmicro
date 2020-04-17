@@ -113,11 +113,13 @@ func EraseAllRedis(key string) {
 	if val.Err() != nil {
 		return
 	}
-	err := redisClient.Del(val.Val()...).Err()
-	if err != nil {
-		WriteError("REDIS", "Failed erase all redis data: "+key+"|"+err.Error())
+	if len(val.Val()) > 0 {
+		err := redisClient.Del(val.Val()...).Err()
+		if err != nil {
+			WriteError("REDIS", "Failed erase all redis data: "+key+"|"+err.Error())
+		}
+		WriteInfo("REDIS", fmt.Sprintf("Erase redis data:%s", AppendRootPathRedis(key)))
 	}
-	WriteInfo("REDIS", fmt.Sprintf("Erase redis data:%s", AppendRootPathRedis(key)))
 }
 
 // ReadRedis 读redis
