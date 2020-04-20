@@ -57,7 +57,7 @@ func PrepareToken() gin.HandlerFunc {
 		}
 		c.Params = append(c.Params, gin.Param{
 			Key:   "_enableAPI",
-			Value: strings.Join(authbinding, ","),
+			Value: strings.Join(enableapi, ","),
 		})
 		// 更新redis的对应键值的有效期
 		if ans.Get("source").String() != "local" {
