@@ -314,7 +314,7 @@ func LoadConfigure(f string, p, l int, clientca string) {
 	MainPort = p
 	LogLevel = l
 	if p > 0 && l > 0 {
-		microLog = gopsu.NewLogger(gopsu.DefaultLogDir, "svr"+strconv.Itoa(p))
+		microLog = gopsu.NewLogger(gopsu.DefaultLogDir, "X"+strconv.Itoa(p)+".core")
 		microLog.SetLogLevel(l)
 		if gopsu.IsExist(".synclog") {
 			microLog.SetAsync(0)
