@@ -12,22 +12,28 @@ import (
 	"github.com/xyzj/gopsu"
 )
 
-// DoRequest 进行http request请求，返回status code,body,error
-func DoRequest(req *http.Request, logdetail ...string) (int, []byte, error) {
+// DoRequest 进行http request请求，
+// 返回status code, body, headers, error
+func DoRequest(req *http.Request, logdetail ...string) (int, []byte, map[string]string, error) {
 	WriteInfo("HTTP", fmt.Sprintf("%s request to %s|%v", req.Method, req.RequestURI, logdetail))
 	resp, err := HTTPClient.Do(req)
 	if err != nil {
 		WriteError("HTTP", "request error: "+err.Error())
-		return 0, []byte{}, err
+		return 0, nil, nil, err
 	}
 	defer resp.Body.Close()
 	var b bytes.Buffer
 	_, err = b.ReadFrom(resp.Body)
 	if err != nil {
 		WriteError("HTTP", "read body error: "+err.Error())
-		return 0, []byte{}, err
+		return 0, nil, nil, err
 	}
-	return resp.StatusCode, b.Bytes(), nil
+	h := make(map[string]string)
+	for k := range resp.Header {
+		h[k] = resp.Header.Get(k)
+	}
+	WriteInfo("HTTP", fmt.Sprintf("%s response %d from %s|%v", req.Method, resp.StatusCode, req.RequestURI, b.String()))
+	return resp.StatusCode, b.Bytes(), h, nil
 }
 
 // PrepareToken 获取User-Token信息

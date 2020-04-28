@@ -289,7 +289,7 @@ func init() {
 		RMQTLS.ClientCA = filepath.Join(baseCAPath, "rmq-ca.pem")
 	}
 	HTTPClient = &http.Client{
-		Timeout: time.Duration(time.Second * 60),
+		Timeout: time.Duration(time.Second * 300),
 		Transport: &http.Transport{
 			IdleConnTimeout: time.Minute,
 			TLSClientConfig: &tls.Config{
