@@ -15,7 +15,7 @@ import (
 // DoRequest 进行http request请求，
 // 返回status code, body, headers, error
 func DoRequest(req *http.Request, logdetail ...string) (int, []byte, map[string]string, error) {
-	WriteInfo("HTTP", fmt.Sprintf("%s request to %s|%v", req.Method, req.RequestURI, logdetail))
+	WriteInfo("HTTP", fmt.Sprintf("%s request to %s|%s", req.Method, req.URL.String(), strings.Join(logdetail, ",")))
 	resp, err := HTTPClient.Do(req)
 	if err != nil {
 		WriteError("HTTP", "request error: "+err.Error())
@@ -32,7 +32,7 @@ func DoRequest(req *http.Request, logdetail ...string) (int, []byte, map[string]
 	for k := range resp.Header {
 		h[k] = resp.Header.Get(k)
 	}
-	WriteInfo("HTTP", fmt.Sprintf("%s response %d from %s|%v", req.Method, resp.StatusCode, req.RequestURI, b.String()))
+	WriteInfo("HTTP", fmt.Sprintf("%s response %d from %s|%v", req.Method, resp.StatusCode, req.URL.String(), b.String()))
 	return resp.StatusCode, b.Bytes(), h, nil
 }
 
