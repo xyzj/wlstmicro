@@ -367,18 +367,16 @@ func WriteSystem(name, msg string) {
 // msg： 日志信息
 // level： 日志级别10,20，30,40,90
 func WriteLog(name, msg string, level int) {
-	if name == "" {
-		if microLog == nil {
-			println(fmt.Sprintf("%s", msg))
-		} else {
-			microLog.WriteLog(fmt.Sprintf("%s", msg), level)
-		}
+	if level == 0 {
+		return
+	}
+	if name != "" {
+		name = "[" + name + "] "
+	}
+	if microLog == nil {
+		println(fmt.Sprintf("%s%s", name, msg))
 	} else {
-		if microLog == nil {
-			println(fmt.Sprintf("[%s] %s", name, msg))
-		} else {
-			microLog.WriteLog(fmt.Sprintf("[%s] %s", name, msg), level)
-		}
+		microLog.WriteLog(fmt.Sprintf("%s%s", name, msg), level)
 	}
 }
 
