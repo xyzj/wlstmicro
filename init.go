@@ -265,13 +265,13 @@ func init() {
 		ETCDTLS.ClientCA = filepath.Join(baseCAPath, "etcd-ca.pem")
 	}
 	HTTPTLS = &tlsFiles{
-		Cert:     filepath.Join(baseCAPath, "http.pem"),
-		Key:      filepath.Join(baseCAPath, "http-key.pem"),
-		ClientCA: filepath.Join(baseCAPath, "rootca.pem"),
+		Cert: filepath.Join(baseCAPath, "http.pem"),
+		Key:  filepath.Join(baseCAPath, "http-key.pem"),
+		// ClientCA: filepath.Join(baseCAPath, "rootca.pem"),
 	}
-	if gopsu.IsExist(filepath.Join(baseCAPath, "http-ca.pem")) {
-		HTTPTLS.ClientCA = filepath.Join(baseCAPath, "http-ca.pem")
-	}
+	// if gopsu.IsExist(filepath.Join(baseCAPath, "http-ca.pem")) {
+	// 	HTTPTLS.ClientCA = filepath.Join(baseCAPath, "http-ca.pem")
+	// }
 	GRPCTLS = &tlsFiles{
 		Cert:     filepath.Join(baseCAPath, "grpc.pem"),
 		Key:      filepath.Join(baseCAPath, "grpc-key.pem"),
@@ -301,7 +301,7 @@ func init() {
 
 // LoadConfigure 初始化配置
 // f：配置文件路径，p：http端口，l：日志等级
-// clientca：客户端ca路径（可选）
+// clientca：客户端ca路径(作废，改为配置文件指定)
 func LoadConfigure(f string, p, l int, clientca string) {
 	if !strings.ContainsAny(f, "\\/") {
 		f = filepath.Join(gopsu.DefaultConfDir, f)
@@ -310,6 +310,7 @@ func LoadConfigure(f string, p, l int, clientca string) {
 	rootPath = AppConf.GetItemDefault("root_path", "wlst-micro", "etcd/mq/redis注册根路径")
 	domainName = AppConf.GetItemDefault("domain_name", "", "set the domain name, cert and key file name should be xxx.crt & xxx.key")
 	rabbitConf.gpsTiming, _ = strconv.ParseInt(AppConf.GetItemDefault("mq_gpstiming", "0", "是否使用广播的gps时间进行对时操作,0-不启用，1-启用（30～900s内进行矫正），2-忽略误差范围强制矫正"), 10, 0)
+	HTTPTLS.ClientCA = AppConf.GetItemDefault("client_ca", "", "双向认证用ca文件路径")
 	AppConf.Save()
 	MainPort = p
 	LogLevel = l
@@ -322,7 +323,6 @@ func LoadConfigure(f string, p, l int, clientca string) {
 			microLog.SetAsync(1)
 		}
 	}
-	HTTPTLS.ClientCA = clientca
 	if domainName != "" {
 		HTTPTLS.Cert = filepath.Join(baseCAPath, domainName+".crt")
 		HTTPTLS.Key = filepath.Join(baseCAPath, domainName+".key")
