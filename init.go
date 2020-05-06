@@ -291,7 +291,8 @@ func init() {
 	HTTPClient = &http.Client{
 		Timeout: time.Duration(time.Second * 300),
 		Transport: &http.Transport{
-			IdleConnTimeout: time.Minute,
+			IdleConnTimeout: time.Second * 30,
+			// MaxConnsPerHost: 30,
 			TLSClientConfig: &tls.Config{
 				InsecureSkipVerify: true,
 			},
