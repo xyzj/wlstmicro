@@ -161,13 +161,16 @@ var (
 	// 加密解密worker
 	CWorker   = gopsu.GetNewCryptoWorker(gopsu.CryptoAES128CBC)
 	MD5Worker = gopsu.GetNewCryptoWorker(gopsu.CryptoMD5)
-)
-
-// 共用参数
-var (
+	// Token 时效
+	tokenLife = time.Minute * 30
 	// ForceHTTP 强制http
 	ForceHTTP = flag.Bool("forcehttp", false, "set true to use HTTP anyway.")
 )
+
+// SetTokenLife 设置User-Token的有效期，默认30分钟
+func SetTokenLife(t time.Duration) {
+	tokenLife = t
+}
 
 // StdLogger StdLogger
 type StdLogger struct {
