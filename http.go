@@ -12,8 +12,10 @@ import (
 	"github.com/xyzj/gopsu"
 )
 
-// DoRequest 进行http request请求，
-// 返回status code, body, headers, error
+// DoRequest 进行http request请求
+// req: http.NewRequest()
+// logdetail: [日志等级(0,10,20,30,40),日志追加信息]
+// 返回statusCode, body, headers, error
 func DoRequest(req *http.Request, logdetail ...string) (int, []byte, map[string]string, error) {
 	level := 20
 	if len(logdetail) > 0 {
@@ -52,19 +54,39 @@ func DoRequest(req *http.Request, logdetail ...string) (int, []byte, map[string]
 }
 
 // PrepareToken 获取User-Token信息
-func PrepareToken() gin.HandlerFunc {
+// forceAbort: token非法时是否退出接口，true-退出，false-不退出
+func PrepareToken(forceAbort ...bool) gin.HandlerFunc {
+	shouldAbort := false
+	if len(forceAbort) > 0 {
+		shouldAbort = forceAbort[0]
+	}
 	return func(c *gin.Context) {
 		uuid := c.GetHeader("User-Token")
 		if len(uuid) != 36 {
+			if shouldAbort {
+				c.Set("status", 0)
+				c.Set("detail", "User-Token illegal")
+				c.AbortWithStatusJSON(200, c.Keys)
+			}
 			return
 		}
 		tokenPath := AppendRootPathRedis("usermanager/legal/" + MD5Worker.Hash([]byte(uuid)))
 		x, err := ReadRedis(tokenPath)
 		if err != nil {
+			if shouldAbort {
+				c.Set("status", 0)
+				c.Set("detail", "User-Token illegal")
+				c.AbortWithStatusJSON(200, c.Keys)
+			}
 			return
 		}
 		ans := gjson.Parse(x)
 		if !ans.Exists() {
+			if shouldAbort {
+				c.Set("status", 0)
+				c.Set("detail", "User-Token illegal")
+				c.AbortWithStatusJSON(200, c.Keys)
+			}
 			return
 		}
 		c.Params = append(c.Params, gin.Param{
