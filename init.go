@@ -321,11 +321,6 @@ func LoadConfigure(f string, p, l int, clientca string) {
 	if p > 0 && l > 0 {
 		microLog = gopsu.NewLogger(gopsu.DefaultLogDir, "X"+strconv.Itoa(p)+".core")
 		microLog.SetLogLevel(l)
-		if gopsu.IsExist(".synclog") {
-			microLog.SetAsync(0)
-		} else {
-			microLog.SetAsync(1)
-		}
 	}
 	if domainName != "" {
 		HTTPTLS.Cert = filepath.Join(baseCAPath, domainName+".crt")
