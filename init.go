@@ -7,13 +7,13 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/tidwall/sjson"
 	"github.com/xyzj/gopsu"
 )
 
@@ -27,113 +27,6 @@ type tlsFiles struct {
 	ClientCA string
 }
 
-// 数据库配置
-type dbConfigure struct {
-	forshow string
-	// 数据库地址
-	addr string
-	// 登录用户名
-	user string
-	// 登录密码
-	pwd string
-	// 数据库名称
-	database string
-	// 数据库驱动模式，mssql/mysql
-	driver string
-	// 是否启用数据库
-	enable bool
-	// 是否启用tls
-	usetls bool
-}
-
-func (conf *dbConfigure) show() string {
-	conf.forshow, _ = sjson.Set("", "addr", dbConf.addr)
-	conf.forshow, _ = sjson.Set(conf.forshow, "user", CWorker.Encrypt(dbConf.user))
-	conf.forshow, _ = sjson.Set(conf.forshow, "pwd", CWorker.Encrypt(dbConf.pwd))
-	conf.forshow, _ = sjson.Set(conf.forshow, "dbname", dbConf.database)
-	conf.forshow, _ = sjson.Set(conf.forshow, "driver", dbConf.driver)
-	return conf.forshow
-}
-
-// etcd配置
-type etcdConfigure struct {
-	forshow string
-	// etcd服务地址
-	addr string
-	// 是否启用tls
-	usetls bool
-	// 是否启用etcd
-	enable bool
-	// 对外公布注册地址
-	regAddr string
-	// 注册根路径
-	root string
-}
-
-func (conf *etcdConfigure) show() string {
-	conf.forshow, _ = sjson.Set("", "addr", etcdConf.addr)
-	conf.forshow, _ = sjson.Set(conf.forshow, "root", etcdConf.root)
-	return conf.forshow
-}
-
-// redis配置
-type redisConfigure struct {
-	forshow string
-	// redis服务地址
-	addr string
-	// 访问密码
-	pwd string
-	// 数据库
-	database int
-	// 是否启用redis
-	enable bool
-}
-
-func (conf *redisConfigure) show() string {
-	conf.forshow, _ = sjson.Set("", "addr", redisConf.addr)
-	conf.forshow, _ = sjson.Set(conf.forshow, "pwd", CWorker.Encrypt(redisConf.pwd))
-	conf.forshow, _ = sjson.Set(conf.forshow, "dbname", redisConf.database)
-	return conf.forshow
-}
-
-// rabbitmq配置
-type rabbitConfigure struct {
-	forshow string
-	// rmq服务地址
-	addr string
-	// 登录用户名
-	user string
-	// 登录密码
-	pwd string
-	// 虚拟域名
-	vhost string
-	// 交换机名称
-	exchange string
-	// 队列名称
-	queue string
-	// 是否使用随机队列名
-	queueRandom bool
-	// 队列是否持久化
-	durable bool
-	// 队列是否在未使用时自动删除
-	autodel bool
-	// 是否启用tls
-	usetls bool
-	// 是否启用rmq
-	enable bool
-	// 启用gps校时,0-不启用，1-启用（30～900s内进行矫正），2-强制对时
-	gpsTiming int64
-}
-
-func (conf *rabbitConfigure) show() string {
-	conf.forshow, _ = sjson.Set("", "addr", rabbitConf.addr)
-	conf.forshow, _ = sjson.Set(conf.forshow, "user", CWorker.Encrypt(rabbitConf.user))
-	conf.forshow, _ = sjson.Set(conf.forshow, "pwd", CWorker.Encrypt(rabbitConf.pwd))
-	conf.forshow, _ = sjson.Set(conf.forshow, "vhost", rabbitConf.vhost)
-	conf.forshow, _ = sjson.Set(conf.forshow, "exchange", rabbitConf.exchange)
-	return conf.forshow
-}
-
 // 本地变量
 var (
 	baseCAPath string
@@ -143,28 +36,42 @@ var (
 	GRPCTLS    *tlsFiles
 	RMQTLS     *tlsFiles
 	AppConf    *gopsu.ConfData
-	dbConf     = &dbConfigure{}
 	redisConf  = &redisConfigure{}
 	etcdConf   = &etcdConfigure{}
 	rabbitConf = &rabbitConfigure{}
 	//	根路径
 	rootPath = "wlst-micro"
 	// 日志
-	microLog *gopsu.MxLog
+	microLog gopsu.Logger
 	// 域名
 	domainName = ""
-
-	MainPort   int
-	LogLevel   int
+	// HTTPClient http request 池
 	HTTPClient *http.Client
+	// 版本信息
+	Version string
 
 	// 加密解密worker
 	CWorker   = gopsu.GetNewCryptoWorker(gopsu.CryptoAES128CBC)
 	MD5Worker = gopsu.GetNewCryptoWorker(gopsu.CryptoMD5)
 	// Token 时效
 	tokenLife = time.Minute * 30
+)
+
+// 启动参数
+var (
 	// ForceHTTP 强制http
 	ForceHTTP = flag.Bool("forcehttp", false, "set true to use HTTP anyway.")
+	// Debug 是否启用调试模式
+	Debug = flag.Bool("debug", false, "set if enable debug info.")
+	// LogLevel 日志等级，可选项10,20,30,40
+	LogLevel = flag.Int("loglevel", 20, "set the file log level. Enable value is: 10,20,30,40; 0-disable file log; -1-disable all log")
+	// LogDays 日志文件保留天数，默认15
+	LogDays = flag.Int("logdays", 15, "set the max days of the log files to keep")
+	// WebPort 主端口
+	WebPort = flag.Int("http", 6819, "set http port to listen on.")
+	// 配置文件
+	conf = flag.String("conf", "", "set the config file path.")
+	Ver  = flag.Bool("version", false, "print version info and exit.")
 )
 
 // SetTokenLife 设置User-Token的有效期，默认30分钟
@@ -248,8 +155,15 @@ func (l *StdLogger) SystemFormat(f string, msg ...interface{}) {
 	}
 }
 
+// DefaultWriter 返回默认writer
+func (l *StdLogger) DefaultWriter() io.Writer {
+	return microLog.DefaultWriter()
+}
+
 func init() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
+	microLog = &StdLogger{}
+
 	CWorker.SetKey("(NMNle+XW!ykVjf1", "Zq0V+,.2u|3sGAzH")
 	// 创建固定目录
 	gopsu.DefaultConfDir, gopsu.DefaultLogDir, gopsu.DefaultCacheDir = gopsu.MakeRuntimeDirs(".")
@@ -304,9 +218,19 @@ func init() {
 }
 
 // LoadConfigure 初始化配置
-// f：配置文件路径，p：http端口，l：日志等级
+// 以下可选，
+// f：配置文件路径，
+// p：日志文件标识，默认使用主端口号，为0,不启用日志，l：日志等级
 // clientca：客户端ca路径(作废，改为配置文件指定)
-func LoadConfigure(f string, p, l int, clientca string) {
+func LoadConfigure() {
+	if !flag.Parsed() {
+		flag.Parse()
+	}
+	if *conf == "" {
+		println("no config file set")
+		os.Exit(1)
+	}
+	f := *conf
 	if !strings.ContainsAny(f, "\\/") {
 		f = filepath.Join(gopsu.DefaultConfDir, f)
 	}
@@ -316,18 +240,23 @@ func LoadConfigure(f string, p, l int, clientca string) {
 	rabbitConf.gpsTiming, _ = strconv.ParseInt(AppConf.GetItemDefault("mq_gpstiming", "0", "是否使用广播的gps时间进行对时操作,0-不启用，1-启用（30～900s内进行矫正），2-忽略误差范围强制矫正"), 10, 0)
 	HTTPTLS.ClientCA = AppConf.GetItemDefault("client_ca", "", "双向认证用ca文件路径")
 	AppConf.Save()
-	MainPort = p
-	LogLevel = l
-	if p > 0 && l > 0 {
-		microLog = gopsu.NewLogger(gopsu.DefaultLogDir, "X"+strconv.Itoa(p)+".core")
-		microLog.SetLogLevel(l)
+	if *Debug {
+		*LogLevel = 10
+	}
+	switch *LogLevel {
+	case -1:
+		microLog = &gopsu.NilLogger{}
+	case 0:
+		microLog = &gopsu.StdLogger{}
+	default:
+		microLog = gopsu.NewLogger(gopsu.DefaultLogDir, "X"+strconv.Itoa(*WebPort)+".core", *LogLevel, *LogDays)
 	}
 	if domainName != "" {
 		HTTPTLS.Cert = filepath.Join(baseCAPath, domainName+".crt")
 		HTTPTLS.Key = filepath.Join(baseCAPath, domainName+".key")
 	}
 	if rabbitConf.gpsTiming != 0 {
-		go newGPSConsumer(strconv.Itoa(p))
+		go newGPSConsumer(strconv.Itoa(*WebPort))
 	}
 }
 
@@ -366,16 +295,23 @@ func WriteSystem(name, msg string) {
 // msg： 日志信息
 // level： 日志级别10,20，30,40,90
 func WriteLog(name, msg string, level int) {
-	if level == 0 {
+	if level == -1 {
 		return
 	}
 	if name != "" {
 		name = "[" + name + "] "
 	}
-	if microLog == nil {
-		println(fmt.Sprintf("%s%s", name, msg))
-	} else {
-		microLog.WriteLog(fmt.Sprintf("%s%s", name, msg), level)
+	switch level {
+	case 10:
+		microLog.Debug(fmt.Sprintf("%s%s", name, msg))
+	case 20:
+		microLog.Info(fmt.Sprintf("%s%s", name, msg))
+	case 30:
+		microLog.Warning(fmt.Sprintf("%s%s", name, msg))
+	case 40:
+		microLog.Error(fmt.Sprintf("%s%s", name, msg))
+	case 90:
+		microLog.System(fmt.Sprintf("%s%s", name, msg))
 	}
 }
 

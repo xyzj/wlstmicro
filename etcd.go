@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/tidwall/sjson"
 	"github.com/xyzj/gopsu"
 	"github.com/xyzj/gopsu/microgo"
 )
@@ -12,6 +13,27 @@ import (
 var (
 	etcdClient *microgo.Etcdv3Client
 )
+
+// etcd配置
+type etcdConfigure struct {
+	forshow string
+	// etcd服务地址
+	addr string
+	// 是否启用tls
+	usetls bool
+	// 是否启用etcd
+	enable bool
+	// 对外公布注册地址
+	regAddr string
+	// 注册根路径
+	root string
+}
+
+func (conf *etcdConfigure) show() string {
+	conf.forshow, _ = sjson.Set("", "addr", etcdConf.addr)
+	conf.forshow, _ = sjson.Set(conf.forshow, "root", etcdConf.root)
+	return conf.forshow
+}
 
 // NewETCDClient NewETCDClient
 func NewETCDClient(svrName, svrType, svrProtocol string) bool {
@@ -55,7 +77,7 @@ func NewETCDClient(svrName, svrType, svrProtocol string) bool {
 		etcdClient.SetRoot(rootPath)
 	}
 	a := strings.Split(etcdConf.regAddr, ":")
-	regPort := strconv.Itoa(MainPort)
+	regPort := strconv.Itoa(*WebPort)
 	if len(a) > 1 {
 		regPort = a[1]
 	}

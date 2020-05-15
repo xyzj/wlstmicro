@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/go-redis/redis"
+	"github.com/tidwall/sjson"
 	"github.com/xyzj/gopsu"
 )
 
@@ -14,6 +15,26 @@ var (
 	// redisClient redis客户端
 	redisClient *redis.Client
 )
+
+// redis配置
+type redisConfigure struct {
+	forshow string
+	// redis服务地址
+	addr string
+	// 访问密码
+	pwd string
+	// 数据库
+	database int
+	// 是否启用redis
+	enable bool
+}
+
+func (conf *redisConfigure) show() string {
+	conf.forshow, _ = sjson.Set("", "addr", redisConf.addr)
+	conf.forshow, _ = sjson.Set(conf.forshow, "pwd", CWorker.Encrypt(redisConf.pwd))
+	conf.forshow, _ = sjson.Set(conf.forshow, "dbname", redisConf.database)
+	return conf.forshow
+}
 
 // NewRedisClient 新的redis client
 func NewRedisClient() bool {

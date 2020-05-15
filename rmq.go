@@ -25,6 +25,44 @@ var (
 	mqRecvWaitLock sync.WaitGroup
 )
 
+// rabbitmq配置
+type rabbitConfigure struct {
+	forshow string
+	// rmq服务地址
+	addr string
+	// 登录用户名
+	user string
+	// 登录密码
+	pwd string
+	// 虚拟域名
+	vhost string
+	// 交换机名称
+	exchange string
+	// 队列名称
+	queue string
+	// 是否使用随机队列名
+	queueRandom bool
+	// 队列是否持久化
+	durable bool
+	// 队列是否在未使用时自动删除
+	autodel bool
+	// 是否启用tls
+	usetls bool
+	// 是否启用rmq
+	enable bool
+	// 启用gps校时,0-不启用，1-启用（30～900s内进行矫正），2-强制对时
+	gpsTiming int64
+}
+
+func (conf *rabbitConfigure) show() string {
+	conf.forshow, _ = sjson.Set("", "addr", rabbitConf.addr)
+	conf.forshow, _ = sjson.Set(conf.forshow, "user", CWorker.Encrypt(rabbitConf.user))
+	conf.forshow, _ = sjson.Set(conf.forshow, "pwd", CWorker.Encrypt(rabbitConf.pwd))
+	conf.forshow, _ = sjson.Set(conf.forshow, "vhost", rabbitConf.vhost)
+	conf.forshow, _ = sjson.Set(conf.forshow, "exchange", rabbitConf.exchange)
+	return conf.forshow
+}
+
 // NewMQProducer NewRabbitmqProducer
 func NewMQProducer() bool {
 	if AppConf == nil {

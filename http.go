@@ -7,10 +7,35 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
 	"github.com/tidwall/gjson"
 	"github.com/xyzj/gopsu"
+	ginmiddleware "github.com/xyzj/gopsu/gin-middleware"
 )
+
+// NewHTTPEngine 创建gin引擎
+func NewHTTPEngine() *gin.Engine {
+	if !*Debug {
+		gin.SetMode((gin.ReleaseMode))
+	}
+	logName := ""
+	if *LogLevel > 0 {
+		logName = fmt.Sprintf("X%d.http", *WebPort)
+	}
+	r := ginmiddleware.NewGinEngine(gopsu.DefaultLogDir, logName, *LogDays)
+	// 读取参数
+	r.Use(ginmiddleware.ReadParams())
+	// 配置程序版本信息，用于runtime页面显示
+	if Version != "" {
+		ginmiddleware.SetVersionInfo(Version)
+		WriteSystem("SYS", Version)
+	}
+	if *Debug {
+		pprof.Register(r)
+	}
+	return r
+}
 
 // DoRequest 进行http request请求
 // req: http.NewRequest()
