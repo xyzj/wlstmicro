@@ -35,11 +35,11 @@ type tlsFiles struct {
 var (
 	baseCAPath string
 
-	ETCDTLS    *tlsFiles
-	HTTPTLS    *tlsFiles
-	GRPCTLS    *tlsFiles
-	RMQTLS     *tlsFiles
-	AppConf    *gopsu.ConfData
+	ETCDTLS *tlsFiles
+	HTTPTLS *tlsFiles
+	GRPCTLS *tlsFiles
+	RMQTLS  *tlsFiles
+	AppConf *gopsu.ConfData
 	//	根路径
 	rootPath = "wlst-micro"
 	// 日志
@@ -53,7 +53,8 @@ var (
 	CWorker   = gopsu.GetNewCryptoWorker(gopsu.CryptoAES128CBC)
 	MD5Worker = gopsu.GetNewCryptoWorker(gopsu.CryptoMD5)
 	// Token 时效
-	tokenLife = time.Minute * 30
+	tokenLife   = time.Minute * 30
+	VersionInfo string
 )
 
 // 启动参数
@@ -72,10 +73,13 @@ var (
 	conf = flag.String("conf", "", "set the config file path.")
 	// 版本信息
 	ver = flag.Bool("version", false, "print version info and exit.")
+	// 帮助信息
+	help = flag.Bool("help", false, "print help message and exit.")
 )
 
 func init() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
+
 	microLog = &gopsu.StdLogger{}
 
 	CWorker.SetKey("(NMNle+XW!ykVjf1", "Zq0V+,.2u|3sGAzH")
@@ -191,25 +195,32 @@ type OptionFramework struct {
 	UseMQConsumer *OptionMQConsumer
 	UseHTTP       *OptionHTTP
 	ExpandFunc    func()
-	VersionInfo   string
+}
+
+func getReady() {
+	if !flag.Parsed() {
+		flag.Parse()
+
+		if *help {
+			flag.PrintDefaults()
+			os.Exit(1)
+		}
+		if *ver {
+			println(VersionInfo)
+			os.Exit(1)
+		}
+	}
 }
 
 // RunFramework 初始化框架相关参数
 func RunFramework(om *OptionFramework) {
-	if !flag.Parsed() {
-		flag.Parse()
-	}
+	getReady()
 	// 保存版本信息
-	if om.VersionInfo != "" {
+	if VersionInfo != "" {
 		p, _ := os.Executable()
 		f, _ := os.OpenFile(fmt.Sprintf("%s.ver", p), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0444)
 		defer f.Close()
-		f.WriteString(om.VersionInfo + "\r\n")
-	}
-	// 启动参数
-	if *ver {
-		println(om.VersionInfo)
-		os.Exit(1)
+		f.WriteString(VersionInfo + "\r\n")
 	}
 	if *Debug {
 		*logLevel = 10
@@ -265,8 +276,8 @@ func RunFramework(om *OptionFramework) {
 			gin.SetMode(gin.DebugMode)
 		}
 		NewHTTPService(om.UseHTTP.GinEngine)
-		if om.VersionInfo != "" {
-			ginmiddleware.SetVersionInfo(om.VersionInfo)
+		if VersionInfo != "" {
+			ginmiddleware.SetVersionInfo(VersionInfo)
 		}
 	}
 	if om.ExpandFunc != nil {
@@ -286,9 +297,8 @@ func RunFramework(om *OptionFramework) {
 // p：日志文件标识，默认使用主端口号，为0,不启用日志，l：日志等级
 // clientca：客户端ca路径(作废，改为配置文件指定)
 func LoadConfigure() {
-	if !flag.Parsed() {
-		flag.Parse()
-	}
+	getReady()
+	// 检查配置
 	if *conf == "" {
 		println("no config file set")
 		os.Exit(1)
@@ -297,7 +307,9 @@ func LoadConfigure() {
 	if !strings.ContainsAny(f, "\\/") {
 		f = filepath.Join(gopsu.DefaultConfDir, f)
 	}
-	AppConf, _ = gopsu.LoadConfig(f)
+	if AppConf == nil {
+		AppConf, _ = gopsu.LoadConfig(f)
+	}
 	rootPath = AppConf.GetItemDefault("root_path", "wlst-micro", "etcd/mq/redis注册根路径")
 	domainName = AppConf.GetItemDefault("domain_name", "", "set the domain name, cert and key file name should be xxx.crt & xxx.key")
 	rabbitConf.gpsTiming, _ = strconv.ParseInt(AppConf.GetItemDefault("mq_gpstiming", "0", "是否使用广播的gps时间进行对时操作,0-不启用，1-启用（30～900s内进行矫正），2-忽略误差范围强制矫正"), 10, 0)

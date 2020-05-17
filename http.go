@@ -2,7 +2,6 @@ package wlstmicro
 
 import (
 	"bytes"
-	"flag"
 	"fmt"
 	"net/http"
 	"path/filepath"
@@ -21,9 +20,7 @@ import (
 
 // NewHTTPEngine 创建gin引擎
 func NewHTTPEngine(f ...gin.HandlerFunc) *gin.Engine {
-	if !flag.Parsed() {
-		flag.Parse()
-	}
+	getReady()
 	r := gin.New()
 	// 中间件
 	//cors
