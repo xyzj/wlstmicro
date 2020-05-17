@@ -101,8 +101,14 @@ type OptionRedis struct {
 	Activation bool
 }
 
-// OptionRabbitMQ rmq配置
-type OptionRabbitMQ struct {
+// OptionMQProducer rmq配置
+type OptionMQProducer struct {
+	// 启用
+	Activation bool
+}
+
+// OptionMQConsumer rmq配置
+type OptionMQConsumer struct {
 	// 消费者队列名
 	QueueName string
 	// 消费者绑定key
@@ -110,9 +116,7 @@ type OptionRabbitMQ struct {
 	// 消费者数据处理方法
 	RecvFunc func(key string, body []byte)
 	// 启用
-	ActivationProducer bool
-	// 启用
-	ActivationConsumer bool
+	Activation bool
 }
 
 // OptionHTTP http配置
@@ -123,11 +127,13 @@ type OptionHTTP struct {
 
 // GoFramework go语言微服务框架
 type OptionFramework struct {
-	UseETCD     *OptionETCD
-	UseSQL      *OptionSQL
-	UseRedis    *OptionRedis
-	UseRabbitMQ *OptionRabbitMQ
-	UseHTTP     *OptionHTTP
+	UseETCD       *OptionETCD
+	UseSQL        *OptionSQL
+	UseRedis      *OptionRedis
+	UseMQProducer *OptionMQProducer
+	UseMQConsumer *OptionMQConsumer
+	UseHTTP       *OptionHTTP
+	ExpandFunc    func()
 }
 
 // RunFramework 初始化框架相关参数
@@ -149,13 +155,13 @@ func RunFramework(om *OptionFramework) {
 	if om.UseRedis.Activation {
 		NewRedisClient()
 	}
-	if om.UseRabbitMQ.ActivationProducer {
+	if om.UseMQProducer.Activation {
 		NewMQProducer()
 	}
-	if om.UseRabbitMQ.ActivationConsumer {
-		NewMQConsumer(om.UseRabbitMQ.QueueName)
-		BindRabbitMQ(om.UseRabbitMQ.BindKeys...)
-		RecvRabbitMQ(om.UseRabbitMQ.RecvFunc)
+	if om.UseMQConsumer.Activation {
+		NewMQConsumer(om.UseMQConsumer.QueueName)
+		BindRabbitMQ(om.UseMQConsumer.BindKeys...)
+		RecvRabbitMQ(om.UseMQConsumer.RecvFunc)
 	}
 	if om.UseSQL.Activation {
 		if om.UseSQL.CacheMark == "" {
@@ -168,6 +174,9 @@ func RunFramework(om *OptionFramework) {
 			om.UseHTTP.GinEngine = NewHTTPEngine()
 		}
 		NewHTTPService(om.UseHTTP.GinEngine)
+	}
+	if om.ExpandFunc != nil {
+		om.ExpandFunc()
 	}
 }
 

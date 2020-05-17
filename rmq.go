@@ -205,7 +205,7 @@ func BindRabbitMQ(keys ...string) {
 
 // UnBindRabbitMQ 解除绑定消费者key
 func UnBindRabbitMQ(keys ...string) {
-	for _, v := range keys {
+	for k, v := range keys {
 		if strings.TrimSpace(v) == "" {
 			continue
 		}
