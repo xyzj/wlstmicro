@@ -268,7 +268,7 @@ func (l *StdLogger) DefaultWriter() io.Writer {
 
 func init() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
-	microLog = &StdLogger{}
+	microLog = &gopsu.StdLogger{}
 
 	CWorker.SetKey("(NMNle+XW!ykVjf1", "Zq0V+,.2u|3sGAzH")
 	// 创建固定目录
