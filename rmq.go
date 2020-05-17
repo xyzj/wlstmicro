@@ -23,6 +23,7 @@ var (
 	mqConsumer *mq.Session
 	// 消费者监控锁
 	mqRecvWaitLock sync.WaitGroup
+	rabbitConf     = &rabbitConfigure{}
 )
 
 // rabbitmq配置

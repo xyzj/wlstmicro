@@ -12,6 +12,7 @@ import (
 
 var (
 	etcdClient *microgo.Etcdv3Client
+	etcdConf   = &etcdConfigure{}
 )
 
 // etcd配置

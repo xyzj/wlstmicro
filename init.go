@@ -40,9 +40,6 @@ var (
 	GRPCTLS    *tlsFiles
 	RMQTLS     *tlsFiles
 	AppConf    *gopsu.ConfData
-	redisConf  = &redisConfigure{}
-	etcdConf   = &etcdConfigure{}
-	rabbitConf = &rabbitConfigure{}
 	//	根路径
 	rootPath = "wlst-micro"
 	// 日志
@@ -76,6 +73,63 @@ var (
 	// 版本信息
 	ver = flag.Bool("version", false, "print version info and exit.")
 )
+
+func init() {
+	runtime.GOMAXPROCS(runtime.NumCPU())
+	microLog = &gopsu.StdLogger{}
+
+	CWorker.SetKey("(NMNle+XW!ykVjf1", "Zq0V+,.2u|3sGAzH")
+	// 创建固定目录
+	gopsu.DefaultConfDir, gopsu.DefaultLogDir, gopsu.DefaultCacheDir = gopsu.MakeRuntimeDirs(".")
+	// 配置默认ca文件路径
+	baseCAPath = filepath.Join(gopsu.DefaultConfDir, "ca")
+	// 检查是否有ca文件指向配置存在,存在则更新路径信息
+	if a, err := ioutil.ReadFile(".capath"); err == nil {
+		baseCAPath = gopsu.DecodeString(gopsu.TrimString(string(a)))
+	}
+	ETCDTLS = &tlsFiles{
+		Cert:     filepath.Join(baseCAPath, "etcd.pem"),
+		Key:      filepath.Join(baseCAPath, "etcd-key.pem"),
+		ClientCA: filepath.Join(baseCAPath, "rootca.pem"),
+	}
+	if gopsu.IsExist(filepath.Join(baseCAPath, "etcd-ca.pem")) {
+		ETCDTLS.ClientCA = filepath.Join(baseCAPath, "etcd-ca.pem")
+	}
+	HTTPTLS = &tlsFiles{
+		Cert: filepath.Join(baseCAPath, "http.pem"),
+		Key:  filepath.Join(baseCAPath, "http-key.pem"),
+		// ClientCA: filepath.Join(baseCAPath, "rootca.pem"),
+	}
+	// if gopsu.IsExist(filepath.Join(baseCAPath, "http-ca.pem")) {
+	// 	HTTPTLS.ClientCA = filepath.Join(baseCAPath, "http-ca.pem")
+	// }
+	GRPCTLS = &tlsFiles{
+		Cert:     filepath.Join(baseCAPath, "grpc.pem"),
+		Key:      filepath.Join(baseCAPath, "grpc-key.pem"),
+		ClientCA: filepath.Join(baseCAPath, "rootca.pem"),
+	}
+	if gopsu.IsExist(filepath.Join(baseCAPath, "grpc-ca.pem")) {
+		GRPCTLS.ClientCA = filepath.Join(baseCAPath, "grpc-ca.pem")
+	}
+	RMQTLS = &tlsFiles{
+		Cert:     filepath.Join(baseCAPath, "rmq.pem"),
+		Key:      filepath.Join(baseCAPath, "rmq-key.pem"),
+		ClientCA: filepath.Join(baseCAPath, "rootca.pem"),
+	}
+	if gopsu.IsExist(filepath.Join(baseCAPath, "rmq-ca.pem")) {
+		RMQTLS.ClientCA = filepath.Join(baseCAPath, "rmq-ca.pem")
+	}
+	HTTPClient = &http.Client{
+		Timeout: time.Duration(time.Second * 300),
+		Transport: &http.Transport{
+			IdleConnTimeout: time.Second * 30,
+			// MaxConnsPerHost: 30,
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
+		},
+	}
+}
 
 // OptionETCD ETCD配置
 type OptionETCD struct {
@@ -145,17 +199,32 @@ func RunFramework(om *OptionFramework) {
 	if !flag.Parsed() {
 		flag.Parse()
 	}
+	// 保存版本信息
 	if om.VersionInfo != "" {
 		p, _ := os.Executable()
 		f, _ := os.OpenFile(fmt.Sprintf("%s.ver", p), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0444)
 		defer f.Close()
 		f.WriteString(om.VersionInfo + "\r\n")
 	}
+	// 启动参数
 	if *ver {
 		println(om.VersionInfo)
 		os.Exit(1)
 	}
+	if *Debug {
+		*logLevel = 10
+	}
+	switch *logLevel {
+	case -1:
+		microLog = &gopsu.NilLogger{}
+	case 0:
+		microLog = &gopsu.StdLogger{}
+	default:
+		microLog = gopsu.NewLogger(gopsu.DefaultLogDir, "X"+strconv.Itoa(*WebPort)+".core", *logLevel, *logDays)
+	}
+	// 载入配置
 	LoadConfigure()
+	// 逐步启动服务
 	if om.UseETCD.Activation {
 		if om.UseETCD.SvrType == "" {
 			if *Debug || *forceHTTP {
@@ -177,7 +246,6 @@ func RunFramework(om *OptionFramework) {
 	}
 	if om.UseMQConsumer.Activation {
 		NewMQConsumer(om.UseMQConsumer.QueueName)
-
 		BindRabbitMQ(om.UseMQConsumer.BindKeys...)
 		go RecvRabbitMQ(om.UseMQConsumer.RecvFunc)
 	}
@@ -196,18 +264,6 @@ func RunFramework(om *OptionFramework) {
 		} else {
 			gin.SetMode(gin.DebugMode)
 		}
-		// logName := ""
-		// if *logLevel > 0 {
-		// 	logName = fmt.Sprintf("X%d.http", *WebPort)
-		// }
-		// om.UseHTTP.GinEngine.Use(ginmiddleware.LoggerWithRolling(gopsu.DefaultLogDir, logName, *logDays))
-		// om.UseHTTP.GinEngine.Use(ginmiddleware.Recovery())
-		// if om.UseHTTP.MiddlewareFunc != nil {
-		// 	for _, v := range om.UseHTTP.MiddlewareFunc {
-		// 		println("sdfsf")
-		// 		om.UseHTTP.GinEngine.Use(v)
-		// 	}
-		// }
 		NewHTTPService(om.UseHTTP.GinEngine)
 		if om.VersionInfo != "" {
 			ginmiddleware.SetVersionInfo(om.VersionInfo)
@@ -216,8 +272,40 @@ func RunFramework(om *OptionFramework) {
 	if om.ExpandFunc != nil {
 		om.ExpandFunc()
 	}
+	if rabbitConf.gpsTiming != 0 {
+		go newGPSConsumer(strconv.Itoa(*WebPort))
+	}
 	for {
 		time.Sleep(time.Minute)
+	}
+}
+
+// LoadConfigure 初始化配置
+// 以下可选，
+// f：配置文件路径，
+// p：日志文件标识，默认使用主端口号，为0,不启用日志，l：日志等级
+// clientca：客户端ca路径(作废，改为配置文件指定)
+func LoadConfigure() {
+	if !flag.Parsed() {
+		flag.Parse()
+	}
+	if *conf == "" {
+		println("no config file set")
+		os.Exit(1)
+	}
+	f := *conf
+	if !strings.ContainsAny(f, "\\/") {
+		f = filepath.Join(gopsu.DefaultConfDir, f)
+	}
+	AppConf, _ = gopsu.LoadConfig(f)
+	rootPath = AppConf.GetItemDefault("root_path", "wlst-micro", "etcd/mq/redis注册根路径")
+	domainName = AppConf.GetItemDefault("domain_name", "", "set the domain name, cert and key file name should be xxx.crt & xxx.key")
+	rabbitConf.gpsTiming, _ = strconv.ParseInt(AppConf.GetItemDefault("mq_gpstiming", "0", "是否使用广播的gps时间进行对时操作,0-不启用，1-启用（30～900s内进行矫正），2-忽略误差范围强制矫正"), 10, 0)
+	HTTPTLS.ClientCA = AppConf.GetItemDefault("client_ca", "", "双向认证用ca文件路径")
+	AppConf.Save()
+	if domainName != "" {
+		HTTPTLS.Cert = filepath.Join(baseCAPath, domainName+".crt")
+		HTTPTLS.Key = filepath.Join(baseCAPath, domainName+".key")
 	}
 }
 
@@ -305,103 +393,6 @@ func (l *StdLogger) SystemFormat(f string, msg ...interface{}) {
 // DefaultWriter 返回默认writer
 func (l *StdLogger) DefaultWriter() io.Writer {
 	return microLog.DefaultWriter()
-}
-
-func init() {
-	runtime.GOMAXPROCS(runtime.NumCPU())
-	microLog = &gopsu.StdLogger{}
-
-	CWorker.SetKey("(NMNle+XW!ykVjf1", "Zq0V+,.2u|3sGAzH")
-	// 创建固定目录
-	gopsu.DefaultConfDir, gopsu.DefaultLogDir, gopsu.DefaultCacheDir = gopsu.MakeRuntimeDirs(".")
-	// 配置默认ca文件路径
-	baseCAPath = filepath.Join(gopsu.DefaultConfDir, "ca")
-	// 检查是否有ca文件指向配置存在,存在则更新路径信息
-	if a, err := ioutil.ReadFile(".capath"); err == nil {
-		baseCAPath = gopsu.DecodeString(gopsu.TrimString(string(a)))
-	}
-	ETCDTLS = &tlsFiles{
-		Cert:     filepath.Join(baseCAPath, "etcd.pem"),
-		Key:      filepath.Join(baseCAPath, "etcd-key.pem"),
-		ClientCA: filepath.Join(baseCAPath, "rootca.pem"),
-	}
-	if gopsu.IsExist(filepath.Join(baseCAPath, "etcd-ca.pem")) {
-		ETCDTLS.ClientCA = filepath.Join(baseCAPath, "etcd-ca.pem")
-	}
-	HTTPTLS = &tlsFiles{
-		Cert: filepath.Join(baseCAPath, "http.pem"),
-		Key:  filepath.Join(baseCAPath, "http-key.pem"),
-		// ClientCA: filepath.Join(baseCAPath, "rootca.pem"),
-	}
-	// if gopsu.IsExist(filepath.Join(baseCAPath, "http-ca.pem")) {
-	// 	HTTPTLS.ClientCA = filepath.Join(baseCAPath, "http-ca.pem")
-	// }
-	GRPCTLS = &tlsFiles{
-		Cert:     filepath.Join(baseCAPath, "grpc.pem"),
-		Key:      filepath.Join(baseCAPath, "grpc-key.pem"),
-		ClientCA: filepath.Join(baseCAPath, "rootca.pem"),
-	}
-	if gopsu.IsExist(filepath.Join(baseCAPath, "grpc-ca.pem")) {
-		GRPCTLS.ClientCA = filepath.Join(baseCAPath, "grpc-ca.pem")
-	}
-	RMQTLS = &tlsFiles{
-		Cert:     filepath.Join(baseCAPath, "rmq.pem"),
-		Key:      filepath.Join(baseCAPath, "rmq-key.pem"),
-		ClientCA: filepath.Join(baseCAPath, "rootca.pem"),
-	}
-	if gopsu.IsExist(filepath.Join(baseCAPath, "rmq-ca.pem")) {
-		RMQTLS.ClientCA = filepath.Join(baseCAPath, "rmq-ca.pem")
-	}
-	HTTPClient = &http.Client{
-		Timeout: time.Duration(time.Second * 300),
-		Transport: &http.Transport{
-			IdleConnTimeout: time.Second * 30,
-			// MaxConnsPerHost: 30,
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true,
-			},
-		},
-	}
-}
-
-// LoadConfigure 初始化配置
-// 以下可选，
-// f：配置文件路径，
-// p：日志文件标识，默认使用主端口号，为0,不启用日志，l：日志等级
-// clientca：客户端ca路径(作废，改为配置文件指定)
-func LoadConfigure() {
-	if *conf == "" {
-		println("no config file set")
-		os.Exit(1)
-	}
-	f := *conf
-	if !strings.ContainsAny(f, "\\/") {
-		f = filepath.Join(gopsu.DefaultConfDir, f)
-	}
-	AppConf, _ = gopsu.LoadConfig(f)
-	rootPath = AppConf.GetItemDefault("root_path", "wlst-micro", "etcd/mq/redis注册根路径")
-	domainName = AppConf.GetItemDefault("domain_name", "", "set the domain name, cert and key file name should be xxx.crt & xxx.key")
-	rabbitConf.gpsTiming, _ = strconv.ParseInt(AppConf.GetItemDefault("mq_gpstiming", "0", "是否使用广播的gps时间进行对时操作,0-不启用，1-启用（30～900s内进行矫正），2-忽略误差范围强制矫正"), 10, 0)
-	HTTPTLS.ClientCA = AppConf.GetItemDefault("client_ca", "", "双向认证用ca文件路径")
-	AppConf.Save()
-	if *Debug {
-		*logLevel = 10
-	}
-	switch *logLevel {
-	case -1:
-		microLog = &gopsu.NilLogger{}
-	case 0:
-		microLog = &gopsu.StdLogger{}
-	default:
-		microLog = gopsu.NewLogger(gopsu.DefaultLogDir, "X"+strconv.Itoa(*WebPort)+".core", *logLevel, *logDays)
-	}
-	if domainName != "" {
-		HTTPTLS.Cert = filepath.Join(baseCAPath, domainName+".crt")
-		HTTPTLS.Key = filepath.Join(baseCAPath, domainName+".key")
-	}
-	if rabbitConf.gpsTiming != 0 {
-		go newGPSConsumer(strconv.Itoa(*WebPort))
-	}
 }
 
 // DefaultLogWriter 返回默认日志读写器
