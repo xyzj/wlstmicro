@@ -13,6 +13,7 @@ import (
 	"github.com/gin-contrib/cors"
 	gingzip "github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/render"
 	"github.com/tidwall/gjson"
 	"github.com/xyzj/gopsu"
 	ginmiddleware "github.com/xyzj/gopsu/gin-middleware"
@@ -44,10 +45,9 @@ func NewHTTPEngine(f ...gin.HandlerFunc) *gin.Engine {
 	r.Use(ginmiddleware.LoggerWithRolling(gopsu.DefaultLogDir, logName, *logDays))
 	// 错误恢复
 	r.Use(ginmiddleware.Recovery())
+	// 其他中间件
 	if f != nil {
-		for _, v := range f {
-			r.Use(v)
-		}
+		r.Use(f...)
 	}
 	// 读取请求参数
 	// r.Use(ginmiddleware.ReadParams())
@@ -69,6 +69,23 @@ func NewHTTPEngine(f ...gin.HandlerFunc) *gin.Engine {
 
 // NewHTTPService 启动HTTP服务
 func NewHTTPService(r *gin.Engine) {
+	var sss string
+	for _, v := range r.Routes() {
+		if v.Path == "/" || v.Method == "HEAD" || strings.HasSuffix(v.Path, "*filepath") || strings.HasPrefix(v.Path, "/proxy") || strings.HasPrefix(v.Path, "/plain") {
+			continue
+		}
+		if strings.ContainsAny(v.Path, "*") && !strings.HasSuffix(v.Path, "filepath") {
+			continue
+		}
+		sss += fmt.Sprintf(`<a>%s: %s</a><br><br>`, v.Method, v.Path)
+	}
+	if sss != "" {
+		r.GET("/showroutes", func(c *gin.Context) {
+			c.Header("Content-Type", "text/html")
+			c.Status(http.StatusOK)
+			render.WriteString(c.Writer, sss, nil)
+		})
+	}
 	go func() {
 		var err error
 		if *Debug || *forceHTTP {
