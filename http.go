@@ -2,13 +2,16 @@ package wlstmicro
 
 import (
 	"bytes"
+	"flag"
 	"fmt"
 	"net/http"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/gin-contrib/pprof"
+	"github.com/gin-contrib/cors"
+	gingzip "github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
 	"github.com/tidwall/gjson"
 	"github.com/xyzj/gopsu"
@@ -16,25 +19,51 @@ import (
 )
 
 // NewHTTPEngine 创建gin引擎
-func NewHTTPEngine() *gin.Engine {
-	if !*Debug {
-		gin.SetMode((gin.ReleaseMode))
+func NewHTTPEngine(f ...gin.HandlerFunc) *gin.Engine {
+	if !flag.Parsed() {
+		flag.Parse()
 	}
+	r := gin.New()
+	// 中间件
+	//cors
+	r.Use(cors.New(cors.Config{
+		MaxAge:           time.Hour * 24,
+		AllowAllOrigins:  true,
+		AllowCredentials: true,
+		AllowWildcard:    true,
+		AllowMethods:     []string{"*"},
+		AllowHeaders:     []string{"*"},
+	}))
+	// 数据压缩
+	r.Use(gingzip.Gzip(9))
+	// 日志
 	logName := ""
-	if *LogLevel > 0 {
+	if *logLevel > 0 {
 		logName = fmt.Sprintf("X%d.http", *WebPort)
 	}
-	r := ginmiddleware.NewGinEngine(gopsu.DefaultLogDir, logName, *LogDays)
-	// 读取参数
-	r.Use(ginmiddleware.ReadParams())
-	// 配置程序版本信息，用于runtime页面显示
-	if Version != "" {
-		ginmiddleware.SetVersionInfo(Version)
-		WriteSystem("SYS", Version)
+	r.Use(ginmiddleware.LoggerWithRolling(gopsu.DefaultLogDir, logName, *logDays))
+	// 错误恢复
+	r.Use(ginmiddleware.Recovery())
+	if f != nil {
+		for _, v := range f {
+			r.Use(v)
+		}
 	}
-	if *Debug {
-		pprof.Register(r)
-	}
+	// 读取请求参数
+	// r.Use(ginmiddleware.ReadParams())
+	// 渲染模板
+	// r.HTMLRender = multiRender()
+	// 基础路由
+	// 404,405
+	r.HandleMethodNotAllowed = true
+	r.NoMethod(ginmiddleware.Page405)
+	r.NoRoute(ginmiddleware.Page404)
+	r.GET("/", ginmiddleware.PageDefault)
+	r.POST("/", ginmiddleware.PageDefault)
+	r.GET("/health", ginmiddleware.PageDefault)
+	r.GET("/clearlog", ginmiddleware.CheckRequired("name"), ginmiddleware.Clearlog)
+	r.GET("/runtime", ginmiddleware.PageRuntime)
+	r.Static("/static", filepath.Join(gopsu.GetExecDir(), "static"))
 	return r
 }
 
@@ -42,7 +71,7 @@ func NewHTTPEngine() *gin.Engine {
 func NewHTTPService(r *gin.Engine) {
 	go func() {
 		var err error
-		if *Debug || *ForceHTTP {
+		if *Debug || *forceHTTP {
 			err = ginmiddleware.ListenAndServe(*WebPort, r)
 		} else {
 			err = ginmiddleware.ListenAndServeTLS(*WebPort, r, HTTPTLS.Cert, HTTPTLS.Key, HTTPTLS.ClientCA)

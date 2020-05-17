@@ -14,6 +14,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gin-contrib/pprof"
+	ginmiddleware "github.com/xyzj/gopsu/gin-middleware"
+
 	"github.com/gin-gonic/gin"
 	"github.com/xyzj/gopsu"
 )
@@ -48,8 +51,6 @@ var (
 	domainName = ""
 	// HTTPClient http request 池
 	HTTPClient *http.Client
-	// 版本信息
-	Version string
 
 	// 加密解密worker
 	CWorker   = gopsu.GetNewCryptoWorker(gopsu.CryptoAES128CBC)
@@ -60,19 +61,20 @@ var (
 
 // 启动参数
 var (
-	// ForceHTTP 强制http
-	ForceHTTP = flag.Bool("forcehttp", false, "set true to use HTTP anyway.")
+	// forceHTTP 强制http
+	forceHTTP = flag.Bool("forcehttp", false, "set true to use HTTP anyway.")
 	// Debug 是否启用调试模式
 	Debug = flag.Bool("debug", false, "set if enable debug info.")
-	// LogLevel 日志等级，可选项10,20,30,40
-	LogLevel = flag.Int("loglevel", 20, "set the file log level. Enable value is: 10,20,30,40; 0-disable file log; -1-disable all log")
-	// LogDays 日志文件保留天数，默认15
-	LogDays = flag.Int("logdays", 15, "set the max days of the log files to keep")
+	// logLevel 日志等级，可选项10,20,30,40
+	logLevel = flag.Int("loglevel", 20, "set the file log level. Enable value is: 10,20,30,40; 0-disable file log; -1-disable all log")
+	// logDays 日志文件保留天数，默认15
+	logDays = flag.Int("logdays", 15, "set the max days of the log files to keep")
 	// WebPort 主端口
 	WebPort = flag.Int("http", 6819, "set http port to listen on.")
 	// 配置文件
 	conf = flag.String("conf", "", "set the config file path.")
-	Ver  = flag.Bool("version", false, "print version info and exit.")
+	// 版本信息
+	ver = flag.Bool("version", false, "print version info and exit.")
 )
 
 // OptionETCD ETCD配置
@@ -121,8 +123,9 @@ type OptionMQConsumer struct {
 
 // OptionHTTP http配置
 type OptionHTTP struct {
-	GinEngine  *gin.Engine
-	Activation bool
+	GinEngine      *gin.Engine
+	MiddlewareFunc []gin.HandlerFunc
+	Activation     bool
 }
 
 // GoFramework go语言微服务框架
@@ -134,14 +137,28 @@ type OptionFramework struct {
 	UseMQConsumer *OptionMQConsumer
 	UseHTTP       *OptionHTTP
 	ExpandFunc    func()
+	VersionInfo   string
 }
 
 // RunFramework 初始化框架相关参数
 func RunFramework(om *OptionFramework) {
+	if !flag.Parsed() {
+		flag.Parse()
+	}
+	if om.VersionInfo != "" {
+		p, _ := os.Executable()
+		f, _ := os.OpenFile(fmt.Sprintf("%s.ver", p), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0444)
+		defer f.Close()
+		f.WriteString(om.VersionInfo + "\r\n")
+	}
+	if *ver {
+		println(om.VersionInfo)
+		os.Exit(1)
+	}
 	LoadConfigure()
 	if om.UseETCD.Activation {
 		if om.UseETCD.SvrType == "" {
-			if *Debug || *ForceHTTP {
+			if *Debug || *forceHTTP {
 				om.UseETCD.SvrType = "http"
 			} else {
 				om.UseETCD.SvrType = "https"
@@ -160,8 +177,9 @@ func RunFramework(om *OptionFramework) {
 	}
 	if om.UseMQConsumer.Activation {
 		NewMQConsumer(om.UseMQConsumer.QueueName)
+
 		BindRabbitMQ(om.UseMQConsumer.BindKeys...)
-		RecvRabbitMQ(om.UseMQConsumer.RecvFunc)
+		go RecvRabbitMQ(om.UseMQConsumer.RecvFunc)
 	}
 	if om.UseSQL.Activation {
 		if om.UseSQL.CacheMark == "" {
@@ -173,7 +191,27 @@ func RunFramework(om *OptionFramework) {
 		if om.UseHTTP.GinEngine == nil {
 			om.UseHTTP.GinEngine = NewHTTPEngine()
 		}
+		if *Debug {
+			pprof.Register(om.UseHTTP.GinEngine)
+		} else {
+			gin.SetMode(gin.DebugMode)
+		}
+		// logName := ""
+		// if *logLevel > 0 {
+		// 	logName = fmt.Sprintf("X%d.http", *WebPort)
+		// }
+		// om.UseHTTP.GinEngine.Use(ginmiddleware.LoggerWithRolling(gopsu.DefaultLogDir, logName, *logDays))
+		// om.UseHTTP.GinEngine.Use(ginmiddleware.Recovery())
+		// if om.UseHTTP.MiddlewareFunc != nil {
+		// 	for _, v := range om.UseHTTP.MiddlewareFunc {
+		// 		println("sdfsf")
+		// 		om.UseHTTP.GinEngine.Use(v)
+		// 	}
+		// }
 		NewHTTPService(om.UseHTTP.GinEngine)
+		if om.VersionInfo != "" {
+			ginmiddleware.SetVersionInfo(om.VersionInfo)
+		}
 	}
 	if om.ExpandFunc != nil {
 		om.ExpandFunc()
@@ -329,9 +367,6 @@ func init() {
 // p：日志文件标识，默认使用主端口号，为0,不启用日志，l：日志等级
 // clientca：客户端ca路径(作废，改为配置文件指定)
 func LoadConfigure() {
-	if !flag.Parsed() {
-		flag.Parse()
-	}
 	if *conf == "" {
 		println("no config file set")
 		os.Exit(1)
@@ -347,15 +382,15 @@ func LoadConfigure() {
 	HTTPTLS.ClientCA = AppConf.GetItemDefault("client_ca", "", "双向认证用ca文件路径")
 	AppConf.Save()
 	if *Debug {
-		*LogLevel = 10
+		*logLevel = 10
 	}
-	switch *LogLevel {
+	switch *logLevel {
 	case -1:
 		microLog = &gopsu.NilLogger{}
 	case 0:
 		microLog = &gopsu.StdLogger{}
 	default:
-		microLog = gopsu.NewLogger(gopsu.DefaultLogDir, "X"+strconv.Itoa(*WebPort)+".core", *LogLevel, *LogDays)
+		microLog = gopsu.NewLogger(gopsu.DefaultLogDir, "X"+strconv.Itoa(*WebPort)+".core", *logLevel, *logDays)
 	}
 	if domainName != "" {
 		HTTPTLS.Cert = filepath.Join(baseCAPath, domainName+".crt")
