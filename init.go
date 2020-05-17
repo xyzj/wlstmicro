@@ -216,6 +216,9 @@ func RunFramework(om *OptionFramework) {
 	if om.ExpandFunc != nil {
 		om.ExpandFunc()
 	}
+	for {
+		time.Sleep(time.Minute)
+	}
 }
 
 // SetTokenLife 设置User-Token的有效期，默认30分钟
