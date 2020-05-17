@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/xyzj/gopsu"
 )
 
@@ -104,50 +105,69 @@ type OptionRedis struct {
 type OptionRabbitMQ struct {
 	// 消费者队列名
 	QueueName string
+	// 消费者绑定key
+	BindKeys []string
+	// 消费者数据处理方法
+	RecvFunc func(key string, body []byte)
 	// 启用
 	ActivationProducer bool
 	// 启用
 	ActivationConsumer bool
 }
 
-// GoMicroFramework go语言微服务框架
-type GoMicroFramework struct {
+// OptionHTTP http配置
+type OptionHTTP struct {
+	GinEngine  *gin.Engine
+	Activation bool
+}
+
+// GoFramework go语言微服务框架
+type OptionFramework struct {
 	UseETCD     *OptionETCD
 	UseSQL      *OptionSQL
 	UseRedis    *OptionRedis
 	UseRabbitMQ *OptionRabbitMQ
+	UseHTTP     *OptionHTTP
 }
 
-// NewFramework 初始化框架相关参数
-func NewFramework(gm *GoMicroFramework) {
+// RunFramework 初始化框架相关参数
+func RunFramework(om *OptionFramework) {
 	LoadConfigure()
-	if gm.UseETCD.Activation {
-		if gm.UseETCD.SvrType == "" {
+	if om.UseETCD.Activation {
+		if om.UseETCD.SvrType == "" {
 			if *Debug || *ForceHTTP {
-				gm.UseETCD.SvrType = "http"
+				om.UseETCD.SvrType = "http"
 			} else {
-				gm.UseETCD.SvrType = "https"
+				om.UseETCD.SvrType = "https"
 			}
 		}
-		if gm.UseETCD.SvrProtocol == "" {
-			gm.UseETCD.SvrProtocol = "json"
+		if om.UseETCD.SvrProtocol == "" {
+			om.UseETCD.SvrProtocol = "json"
 		}
-		NewETCDClient(gm.UseETCD.SvrName, gm.UseETCD.SvrType, gm.UseETCD.SvrProtocol)
+		NewETCDClient(om.UseETCD.SvrName, om.UseETCD.SvrType, om.UseETCD.SvrProtocol)
 	}
-	if gm.UseRedis.Activation {
+	if om.UseRedis.Activation {
 		NewRedisClient()
 	}
-	if gm.UseRabbitMQ.ActivationConsumer {
-		NewMQConsumer(gm.UseRabbitMQ.QueueName)
-	}
-	if gm.UseRabbitMQ.ActivationProducer {
+	if om.UseRabbitMQ.ActivationProducer {
 		NewMQProducer()
 	}
-	if gm.UseSQL.Activation {
-		if gm.UseSQL.CacheMark == "" {
-			gm.UseSQL.CacheMark = strconv.FormatInt(int64(*WebPort), 10)
+	if om.UseRabbitMQ.ActivationConsumer {
+		NewMQConsumer(om.UseRabbitMQ.QueueName)
+		BindRabbitMQ(om.UseRabbitMQ.BindKeys...)
+		RecvRabbitMQ(om.UseRabbitMQ.RecvFunc)
+	}
+	if om.UseSQL.Activation {
+		if om.UseSQL.CacheMark == "" {
+			om.UseSQL.CacheMark = strconv.FormatInt(int64(*WebPort), 10)
 		}
-		NewMysqlClient(gm.UseSQL.CacheMark)
+		NewMysqlClient(om.UseSQL.CacheMark)
+	}
+	if om.UseHTTP.Activation {
+		if om.UseHTTP.GinEngine == nil {
+			om.UseHTTP.GinEngine = NewHTTPEngine()
+		}
+		NewHTTPService(om.UseHTTP.GinEngine)
 	}
 }
 

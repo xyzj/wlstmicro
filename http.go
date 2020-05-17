@@ -38,8 +38,8 @@ func NewHTTPEngine() *gin.Engine {
 	return r
 }
 
-// ServeHTTP 启动HTTP服务
-func ServeHTTP(r *gin.Engine) {
+// NewHTTPService 启动HTTP服务
+func NewHTTPService(r *gin.Engine) {
 	go func() {
 		var err error
 		if *Debug || *ForceHTTP {

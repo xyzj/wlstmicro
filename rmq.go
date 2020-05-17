@@ -95,12 +95,9 @@ func NewMQProducer() bool {
 			WriteError("MQ", "RabbitMQ TLS Error: "+err.Error())
 			return false
 		}
-		go mqProducer.StartTLS(tc)
-	} else {
-		go mqProducer.Start()
+		return mqProducer.StartTLS(tc)
 	}
-	mqProducer.WaitReady(5)
-	return true
+	return mqProducer.Start()
 }
 
 // NewMQConsumer NewMQConsumer
@@ -139,50 +136,36 @@ func NewMQConsumer(svrName string) bool {
 	mqConsumer.SetLogger(&StdLogger{
 		Name: "MQ",
 	})
-	go mqConsumer.Start()
-	mqConsumer.WaitReady(10)
-	return true
+	return mqConsumer.Start()
 }
 
 // RecvRabbitMQ 接收消息
 // f: 消息处理方法，key为消息过滤器，body为消息体
 func RecvRabbitMQ(f func(key string, body []byte)) {
-	if !ConsumerIsReady() {
-		return
-	}
+	var mqRecvWaitLock sync.WaitGroup
+RECV:
 	go func() {
 		defer func() {
 			if err := recover(); err != nil {
 				WriteError("MQ", "Consumer core crash: "+errors.WithStack(err.(error)).Error())
 			}
+			mqRecvWaitLock.Done()
 		}()
-		for {
-			time.Sleep(time.Second)
-			mqRecvWaitLock.Wait()
-			mqConsumer.WaitReady(5)
-			go mqRecv(f)
+		mqRecvWaitLock.Add(1)
+		rcvMQ, err := mqConsumer.Recv()
+		if err != nil {
+			WriteError("MQ", "Rcv Err: "+err.Error())
+			return
+		}
+		for d := range rcvMQ {
+			WriteDebug("MQ", "Debug-R:"+rabbitConf.addr+"|"+d.RoutingKey+"|"+base64.StdEncoding.EncodeToString(d.Body))
+			f(d.RoutingKey, d.Body)
 		}
 	}()
-}
 
-// 接收数据
-func mqRecv(f func(key string, body []byte)) {
-	defer func() {
-		if err := recover(); err != nil {
-			WriteError("MQ", "Rcv Crash: "+errors.WithStack(err.(error)).Error())
-		}
-		mqRecvWaitLock.Done()
-	}()
-	mqRecvWaitLock.Add(1)
-	rcvMQ, err := mqConsumer.Recv()
-	if err != nil {
-		WriteError("MQ", "Rcv Err: "+err.Error())
-		return
-	}
-	for d := range rcvMQ {
-		WriteDebug("MQ", "Debug-R:"+rabbitConf.addr+"|"+d.RoutingKey+"|"+base64.StdEncoding.EncodeToString(d.Body))
-		f(d.RoutingKey, d.Body)
-	}
+	mqRecvWaitLock.Wait()
+	time.Sleep(time.Second * 15)
+	goto RECV
 }
 
 // ProducerIsReady 返回ProducerIsReady可用状态
@@ -211,28 +194,24 @@ func AppendRootPathRabbit(key string) string {
 
 // BindRabbitMQ 绑定消费者key
 func BindRabbitMQ(keys ...string) {
-	if !ConsumerIsReady() {
-		return
-	}
-	for _, v := range keys {
+	for k, v := range keys {
 		if strings.TrimSpace(v) == "" {
 			continue
 		}
-		mqConsumer.BindKey(AppendRootPathRabbit(v))
+		keys[k] = AppendRootPathRabbit(v)
 	}
+	mqConsumer.BindKey(keys...)
 }
 
 // UnBindRabbitMQ 解除绑定消费者key
 func UnBindRabbitMQ(keys ...string) {
-	if !ConsumerIsReady() {
-		return
-	}
 	for _, v := range keys {
 		if strings.TrimSpace(v) == "" {
 			continue
 		}
-		mqConsumer.UnBindKey(AppendRootPathRabbit(v))
+		keys[k] = AppendRootPathRabbit(v)
 	}
+	mqConsumer.UnBindKey(keys...)
 }
 
 // ReadRabbitMQ 获得消费者消息通道 (Obsolete,please just call RecvRabbitMQ(func(key string,body []body)))

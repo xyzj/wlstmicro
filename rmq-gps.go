@@ -15,8 +15,7 @@ import (
 
 var (
 	// gpsConsumer
-	gpsConsumer     *mq.Session
-	gpsRecvWaitLock sync.WaitGroup
+	gpsConsumer *mq.Session
 )
 
 // 启用gps校时
@@ -35,50 +34,50 @@ func newGPSConsumer(svrName string) {
 		Name: "MQGPS",
 	})
 
-	go gpsConsumer.Start()
-	gpsConsumer.WaitReady(10)
+	gpsConsumer.Start()
 
 	gpsConsumer.BindKey(AppendRootPathRabbit("gps.serlreader.#"))
 	go gpsRecv()
-	go handerGPSRecv()
 }
 
-func handerGPSRecv() {
-	for {
-		time.Sleep(time.Second)
-		gpsRecvWaitLock.Wait()
-		go gpsRecv()
-	}
-}
 func gpsRecv() {
-	defer func() {
-		if err := recover(); err != nil {
-			WriteError("MQGPS", "Rcv Crash: "+errors.WithStack(err.(error)).Error())
+	var gpsRecvWaitLock sync.WaitGroup
+RECV:
+	go func() {
+		defer func() {
+			if err := recover(); err != nil {
+				WriteError("MQGPS", "Rcv Crash: "+errors.WithStack(err.(error)).Error())
+			}
+			gpsRecvWaitLock.Done()
+		}()
+		gpsRecvWaitLock.Add(1)
+		rcvMQ, err := gpsConsumer.Recv()
+		if err != nil {
+			WriteError("MQGPS", "Rcv Err: "+err.Error())
+			return
 		}
-		gpsRecvWaitLock.Done()
-	}()
-	gpsRecvWaitLock.Add(1)
-	rcvMQ, err := gpsConsumer.Recv()
-	if err != nil {
-		WriteError("MQGPS", "Rcv Err: "+err.Error())
-		return
-	}
-	for d := range rcvMQ {
-		WriteDebug("MQGPS", "Debug-R:"+d.RoutingKey+"|"+string(d.Body))
-		gpsData := gjson.ParseBytes(d.Body)
-		if math.Abs(float64(gpsData.Get("cache_time").Int()-time.Now().Unix())) < 30 {
-			switch rabbitConf.gpsTiming {
-			case 0: // 不校时，不存在这个情况，姑且写在这里
-			case 1: // 50～900s范围校时
-				if math.Abs(float64(time.Now().Unix()-gpsData.Get("gps_time").Int())) > 50 && math.Abs(float64(time.Now().Unix()-gpsData.Get("gps_time").Int())) < 900 {
+		for d := range rcvMQ {
+			WriteDebug("MQGPS", "Debug-R:"+d.RoutingKey+"|"+string(d.Body))
+			gpsData := gjson.ParseBytes(d.Body)
+			if math.Abs(float64(gpsData.Get("cache_time").Int()-time.Now().Unix())) < 30 {
+				switch rabbitConf.gpsTiming {
+				case 0: // 不校时，不存在这个情况，姑且写在这里
+				case 1: // 50～900s范围校时
+					if math.Abs(float64(time.Now().Unix()-gpsData.Get("gps_time").Int())) > 50 && math.Abs(float64(time.Now().Unix()-gpsData.Get("gps_time").Int())) < 900 {
+						modifyTime(gpsData.Get("gps_time").Int())
+					}
+				case 2: // 强制校时
 					modifyTime(gpsData.Get("gps_time").Int())
 				}
-			case 2: // 强制校时
-				modifyTime(gpsData.Get("gps_time").Int())
 			}
 		}
-	}
+	}()
+
+	gpsRecvWaitLock.Wait()
+	time.Sleep(time.Second * 15)
+	goto RECV
 }
+
 func modifyTime(t int64) {
 	gd := time.Unix(t, 5)
 	year, month, day := gd.Date()
