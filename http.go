@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -35,6 +36,21 @@ func NewHTTPEngine() *gin.Engine {
 		pprof.Register(r)
 	}
 	return r
+}
+
+// ServeHTTP 启动HTTP服务
+func ServeHTTP(r *gin.Engine) {
+	go func() {
+		var err error
+		if *Debug || *ForceHTTP {
+			err = ginmiddleware.ListenAndServe(*WebPort, r)
+		} else {
+			err = ginmiddleware.ListenAndServeTLS(*WebPort, r, HTTPTLS.Cert, HTTPTLS.Key, HTTPTLS.ClientCA)
+		}
+		if err != nil {
+			WriteError("HTTP", "Failed start HTTP(S) server at :"+strconv.Itoa(*WebPort)+"|"+err.Error())
+		}
+	}()
 }
 
 // DoRequest 进行http request请求

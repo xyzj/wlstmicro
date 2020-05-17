@@ -74,6 +74,83 @@ var (
 	Ver  = flag.Bool("version", false, "print version info and exit.")
 )
 
+// OptionETCD ETCD配置
+type OptionETCD struct {
+	// 服务名称
+	SvrName string
+	// 服务类型，留空时默认为http或https
+	SvrType string
+	// 交互协议，留空默认json
+	SvrProtocol string
+	// 启用
+	Activation bool
+}
+
+// OptionSQL 数据库配置
+type OptionSQL struct {
+	// 缓存文件标识
+	CacheMark string
+	// 启用
+	Activation bool
+}
+
+// OptionRedis redis配置
+type OptionRedis struct {
+	// 启用
+	Activation bool
+}
+
+// OptionRabbitMQ rmq配置
+type OptionRabbitMQ struct {
+	// 消费者队列名
+	QueueName string
+	// 启用
+	ActivationProducer bool
+	// 启用
+	ActivationConsumer bool
+}
+
+// GoMicroFramework go语言微服务框架
+type GoMicroFramework struct {
+	UseETCD     *OptionETCD
+	UseSQL      *OptionSQL
+	UseRedis    *OptionRedis
+	UseRabbitMQ *OptionRabbitMQ
+}
+
+// NewFramework 初始化框架相关参数
+func NewFramework(gm *GoMicroFramework) {
+	LoadConfigure()
+	if gm.UseETCD.Activation {
+		if gm.UseETCD.SvrType == "" {
+			if *Debug || *ForceHTTP {
+				gm.UseETCD.SvrType = "http"
+			} else {
+				gm.UseETCD.SvrType = "https"
+			}
+		}
+		if gm.UseETCD.SvrProtocol == "" {
+			gm.UseETCD.SvrProtocol = "json"
+		}
+		NewETCDClient(gm.UseETCD.SvrName, gm.UseETCD.SvrType, gm.UseETCD.SvrProtocol)
+	}
+	if gm.UseRedis.Activation {
+		NewRedisClient()
+	}
+	if gm.UseRabbitMQ.ActivationConsumer {
+		NewMQConsumer(gm.UseRabbitMQ.QueueName)
+	}
+	if gm.UseRabbitMQ.ActivationProducer {
+		NewMQProducer()
+	}
+	if gm.UseSQL.Activation {
+		if gm.UseSQL.CacheMark == "" {
+			gm.UseSQL.CacheMark = strconv.FormatInt(int64(*WebPort), 10)
+		}
+		NewMysqlClient(gm.UseSQL.CacheMark)
+	}
+}
+
 // SetTokenLife 设置User-Token的有效期，默认30分钟
 func SetTokenLife(t time.Duration) {
 	tokenLife = t
