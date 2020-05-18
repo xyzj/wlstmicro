@@ -185,16 +185,22 @@ type OptionHTTP struct {
 	Activation bool
 }
 
+// ExpandFunc 扩展带参数方法
+type ExpandFunc struct {
+	Func func(args ...interface{})
+	Args []interface{}
+}
+
 // OptionFramework go语言微服务框架
 type OptionFramework struct {
-	UseETCD       *OptionETCD
-	UseSQL        *OptionSQL
-	UseRedis      *OptionRedis
-	UseMQProducer *OptionMQProducer
-	UseMQConsumer *OptionMQConsumer
-	UseHTTP       *OptionHTTP
-	ExpandFunc    func()
-	ExpandFuncs   []func()
+	UseETCD             *OptionETCD
+	UseSQL              *OptionSQL
+	UseRedis            *OptionRedis
+	UseMQProducer       *OptionMQProducer
+	UseMQConsumer       *OptionMQConsumer
+	UseHTTP             *OptionHTTP
+	ExpandFunc          func()
+	ExpandFuncsWithArgs []*ExpandFunc
 }
 
 func getReady() {
@@ -296,9 +302,9 @@ func RunFramework(om *OptionFramework) {
 	if om.ExpandFunc != nil {
 		om.ExpandFunc()
 	}
-	if om.ExpandFuncs != nil {
-		for _, v := range om.ExpandFuncs {
-			v()
+	if om.ExpandFuncsWithArgs != nil {
+		for _, v := range om.ExpandFuncsWithArgs {
+			v.Func(v.Args...)
 		}
 	}
 	// 执行gps对时
