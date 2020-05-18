@@ -181,12 +181,11 @@ type OptionMQConsumer struct {
 
 // OptionHTTP http配置
 type OptionHTTP struct {
-	GinEngine      *gin.Engine
-	MiddlewareFunc []gin.HandlerFunc
-	Activation     bool
+	GinEngine  *gin.Engine
+	Activation bool
 }
 
-// GoFramework go语言微服务框架
+// OptionFramework go语言微服务框架
 type OptionFramework struct {
 	UseETCD       *OptionETCD
 	UseSQL        *OptionSQL
@@ -195,6 +194,7 @@ type OptionFramework struct {
 	UseMQConsumer *OptionMQConsumer
 	UseHTTP       *OptionHTTP
 	ExpandFunc    func()
+	ExpandFuncs   []func()
 }
 
 func getReady() {
@@ -236,55 +236,76 @@ func RunFramework(om *OptionFramework) {
 	// 载入配置
 	LoadConfigure()
 	// 逐步启动服务
-	if om.UseETCD.Activation {
-		if om.UseETCD.SvrType == "" {
-			if *Debug || *forceHTTP {
-				om.UseETCD.SvrType = "http"
+	if om.UseETCD != nil {
+		if om.UseETCD.Activation {
+			if om.UseETCD.SvrType == "" {
+				if *Debug || *forceHTTP {
+					om.UseETCD.SvrType = "http"
+				} else {
+					om.UseETCD.SvrType = "https"
+				}
+			}
+			if om.UseETCD.SvrProtocol == "" {
+				om.UseETCD.SvrProtocol = "json"
+			}
+			NewETCDClient(om.UseETCD.SvrName, om.UseETCD.SvrType, om.UseETCD.SvrProtocol)
+		}
+	}
+	if om.UseRedis != nil {
+		if om.UseRedis.Activation {
+			NewRedisClient()
+		}
+	}
+	if om.UseMQProducer != nil {
+		if om.UseMQProducer.Activation {
+			NewMQProducer()
+		}
+	}
+	if om.UseMQConsumer != nil {
+		if om.UseMQConsumer.Activation {
+			NewMQConsumer(om.UseMQConsumer.QueueName)
+			BindRabbitMQ(om.UseMQConsumer.BindKeys...)
+			go RecvRabbitMQ(om.UseMQConsumer.RecvFunc)
+		}
+	}
+	if om.UseSQL != nil {
+		if om.UseSQL.Activation {
+			if om.UseSQL.CacheMark == "" {
+				om.UseSQL.CacheMark = strconv.FormatInt(int64(*WebPort), 10)
+			}
+			NewMysqlClient(om.UseSQL.CacheMark)
+		}
+	}
+	if om.UseHTTP != nil {
+		if om.UseHTTP.Activation {
+			if om.UseHTTP.GinEngine == nil {
+				om.UseHTTP.GinEngine = NewHTTPEngine()
+			}
+			if *Debug {
+				pprof.Register(om.UseHTTP.GinEngine)
 			} else {
-				om.UseETCD.SvrType = "https"
+				gin.SetMode(gin.DebugMode)
+			}
+			NewHTTPService(om.UseHTTP.GinEngine)
+			if VersionInfo != "" {
+				ginmiddleware.SetVersionInfo(VersionInfo)
 			}
 		}
-		if om.UseETCD.SvrProtocol == "" {
-			om.UseETCD.SvrProtocol = "json"
-		}
-		NewETCDClient(om.UseETCD.SvrName, om.UseETCD.SvrType, om.UseETCD.SvrProtocol)
 	}
-	if om.UseRedis.Activation {
-		NewRedisClient()
-	}
-	if om.UseMQProducer.Activation {
-		NewMQProducer()
-	}
-	if om.UseMQConsumer.Activation {
-		NewMQConsumer(om.UseMQConsumer.QueueName)
-		BindRabbitMQ(om.UseMQConsumer.BindKeys...)
-		go RecvRabbitMQ(om.UseMQConsumer.RecvFunc)
-	}
-	if om.UseSQL.Activation {
-		if om.UseSQL.CacheMark == "" {
-			om.UseSQL.CacheMark = strconv.FormatInt(int64(*WebPort), 10)
-		}
-		NewMysqlClient(om.UseSQL.CacheMark)
-	}
-	if om.UseHTTP.Activation {
-		if om.UseHTTP.GinEngine == nil {
-			om.UseHTTP.GinEngine = NewHTTPEngine()
-		}
-		if *Debug {
-			pprof.Register(om.UseHTTP.GinEngine)
-		} else {
-			gin.SetMode(gin.DebugMode)
-		}
-		NewHTTPService(om.UseHTTP.GinEngine)
-		if VersionInfo != "" {
-			ginmiddleware.SetVersionInfo(VersionInfo)
-		}
-	}
+	// 执行额外方法
 	if om.ExpandFunc != nil {
 		om.ExpandFunc()
 	}
-	if rabbitConf.gpsTiming != 0 {
-		go newGPSConsumer(strconv.Itoa(*WebPort))
+	if om.ExpandFuncs != nil {
+		for _, v := range om.ExpandFuncs {
+			v()
+		}
+	}
+	// 执行gps对时
+	if rabbitConf != nil {
+		if rabbitConf.gpsTiming != 0 {
+			go newGPSConsumer(strconv.Itoa(*WebPort))
+		}
 	}
 	for {
 		time.Sleep(time.Minute)
