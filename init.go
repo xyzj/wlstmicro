@@ -290,7 +290,7 @@ func RunFramework(om *OptionFramework) {
 			if *Debug {
 				pprof.Register(om.UseHTTP.GinEngine)
 			} else {
-				gin.SetMode(gin.DebugMode)
+				gin.SetMode(gin.ReleaseMode)
 			}
 			NewHTTPService(om.UseHTTP.GinEngine)
 			if VersionInfo != "" {
@@ -304,7 +304,9 @@ func RunFramework(om *OptionFramework) {
 	}
 	if om.ExpandFuncsWithArgs != nil {
 		for _, v := range om.ExpandFuncsWithArgs {
-			v.Func(v.Args...)
+			if v.Func != nil {
+				v.Func(v.Args...)
+			}
 		}
 	}
 	// 执行gps对时
