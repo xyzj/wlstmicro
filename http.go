@@ -36,7 +36,7 @@ func NewHTTPEngine(f ...gin.HandlerFunc) *gin.Engine {
 	// 日志
 	logName := ""
 	if *logLevel > 0 {
-		logName = fmt.Sprintf("X%d.http", *WebPort)
+		logName = "X" + loggerMark + ".http"
 	}
 	r.Use(ginmiddleware.LoggerWithRolling(gopsu.DefaultLogDir, logName, *logDays))
 	// 错误恢复

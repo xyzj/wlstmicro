@@ -53,7 +53,9 @@ var (
 	CWorker   = gopsu.GetNewCryptoWorker(gopsu.CryptoAES128CBC)
 	MD5Worker = gopsu.GetNewCryptoWorker(gopsu.CryptoMD5)
 	// Token 时效
-	tokenLife   = time.Minute * 30
+	tokenLife = time.Minute * 30
+	// 日志标识
+	loggerMark  string
 	VersionInfo string
 )
 
@@ -197,6 +199,7 @@ type ExpandFunc struct {
 
 // OptionFramework go语言微服务框架
 type OptionFramework struct {
+	LoggerMark string
 	// 启用ETCD模块
 	UseETCD *OptionETCD
 	// 启用SQL模块
@@ -251,6 +254,11 @@ func RunFramework(om *OptionFramework) {
 	if om.FlagFunc != nil {
 		om.FlagFunc()
 	}
+	if om.LoggerMark == "" {
+		loggerMark = fmt.Sprint(*WebPort)
+	} else {
+		loggerMark = om.LoggerMark
+	}
 	// 保存版本信息
 	if VersionInfo != "" {
 		p, _ := os.Executable()
@@ -267,7 +275,7 @@ func RunFramework(om *OptionFramework) {
 	case 0:
 		microLog = &gopsu.StdLogger{}
 	default:
-		microLog = gopsu.NewLogger(gopsu.DefaultLogDir, "X"+strconv.Itoa(*WebPort)+".core", *logLevel, *logDays)
+		microLog = gopsu.NewLogger(gopsu.DefaultLogDir, "X"+loggerMark+".core", *logLevel, *logDays)
 	}
 	// 载入配置
 	LoadConfigure()
