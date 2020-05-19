@@ -206,15 +206,14 @@ type OptionFramework struct {
 func getReady() {
 	if !flag.Parsed() {
 		flag.Parse()
-
-		if *help {
-			flag.PrintDefaults()
-			os.Exit(1)
-		}
-		if *ver {
-			println(VersionInfo)
-			os.Exit(1)
-		}
+	}
+	if *help {
+		flag.PrintDefaults()
+		os.Exit(1)
+	}
+	if *ver {
+		println(VersionInfo)
+		os.Exit(1)
 	}
 }
 
