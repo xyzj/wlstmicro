@@ -181,7 +181,11 @@ type OptionMQConsumer struct {
 
 // OptionHTTP http配置
 type OptionHTTP struct {
-	GinEngine  *gin.Engine
+	// 路由引擎值
+	GinEngine *gin.Engine
+	// 路由引擎组合方法，推荐使用这个方法代替GinEngine值，可以避免过早初始化
+	EngineFunc func() *gin.Engine
+	// 启用
 	Activation bool
 }
 
@@ -193,17 +197,41 @@ type ExpandFunc struct {
 
 // OptionFramework go语言微服务框架
 type OptionFramework struct {
-	UseETCD             *OptionETCD
-	UseSQL              *OptionSQL
-	UseRedis            *OptionRedis
-	UseMQProducer       *OptionMQProducer
-	UseMQConsumer       *OptionMQConsumer
-	UseHTTP             *OptionHTTP
-	ExpandFunc          func()
+	// 启用ETCD模块
+	UseETCD *OptionETCD
+	// 启用SQL模块
+	UseSQL *OptionSQL
+	// 启用Redis模块
+	UseRedis *OptionRedis
+	// 启用mq生产者模块
+	UseMQProducer *OptionMQProducer
+	// 启用mq消费者模块
+	UseMQConsumer *OptionMQConsumer
+	// 启用http服务模块
+	UseHTTP *OptionHTTP
+	// 启动参数处理方法，在模块初始化之前执行
+	// 非线程执行，注意不要阻塞
+	// 提交方法名称时最后不要加`()`，表示把方法作为参数，而不是把方法的执行结果回传
+	FlagFunc func()
+	// 无参数的扩展方法，用于处理额外的数据或变量，所有模块初始化完成后执行
+	// 非线程执行，注意不要阻塞
+	// 提交方法名称时最后不要加`()`，表示把方法作为参数，而不是把方法的执行结果回传
+	ExpandFunc func()
+	// 带参数的扩展方法列表，，用于处理额外的数据或变量，可传入外部参数，ExpandFunc执行完成后执行
+	// 非线程执行，注意不要阻塞
+	// 非线程顺序执行，注意不要阻塞
+	// sample：
+	// []*wlstmicro.ExpandFunc{
+	// 	&wlstmicro.ExpandFunc{
+	// 		Func: funcName,
+	// 		Args: []interface{}{"aaa",111},
+	// 	},
+	// }
 	ExpandFuncsWithArgs []*ExpandFunc
 }
 
-func getReady() {
+// getFlagReady 处理启动参数
+func getFlagReady() {
 	if !flag.Parsed() {
 		flag.Parse()
 	}
@@ -219,7 +247,10 @@ func getReady() {
 
 // RunFramework 初始化框架相关参数
 func RunFramework(om *OptionFramework) {
-	getReady()
+	getFlagReady()
+	if om.FlagFunc != nil {
+		om.FlagFunc()
+	}
 	// 保存版本信息
 	if VersionInfo != "" {
 		p, _ := os.Executable()
@@ -283,8 +314,12 @@ func RunFramework(om *OptionFramework) {
 	}
 	if om.UseHTTP != nil {
 		if om.UseHTTP.Activation {
-			if om.UseHTTP.GinEngine == nil {
-				om.UseHTTP.GinEngine = NewHTTPEngine()
+			if om.UseHTTP.EngineFunc != nil {
+				om.UseHTTP.GinEngine = om.UseHTTP.EngineFunc()
+			} else {
+				if om.UseHTTP.GinEngine == nil {
+					om.UseHTTP.GinEngine = NewHTTPEngine()
+				}
 			}
 			if *Debug {
 				pprof.Register(om.UseHTTP.GinEngine)
@@ -325,7 +360,6 @@ func RunFramework(om *OptionFramework) {
 // p：日志文件标识，默认使用主端口号，为0,不启用日志，l：日志等级
 // clientca：客户端ca路径(作废，改为配置文件指定)
 func LoadConfigure() {
-	getReady()
 	// 检查配置
 	if *conf == "" {
 		println("no config file set")

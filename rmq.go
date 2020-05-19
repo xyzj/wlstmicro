@@ -195,24 +195,26 @@ func AppendRootPathRabbit(key string) string {
 
 // BindRabbitMQ 绑定消费者key
 func BindRabbitMQ(keys ...string) {
-	for k, v := range keys {
+	kk := make([]string, 0)
+	for _, v := range keys {
 		if strings.TrimSpace(v) == "" {
 			continue
 		}
-		keys[k] = AppendRootPathRabbit(v)
+		kk = append(kk, AppendRootPathRabbit(v))
 	}
-	mqConsumer.BindKey(keys...)
+	mqConsumer.BindKey(kk...)
 }
 
 // UnBindRabbitMQ 解除绑定消费者key
 func UnBindRabbitMQ(keys ...string) {
-	for k, v := range keys {
+	kk := make([]string, 0)
+	for _, v := range keys {
 		if strings.TrimSpace(v) == "" {
 			continue
 		}
-		keys[k] = AppendRootPathRabbit(v)
+		kk = append(kk, AppendRootPathRabbit(v))
 	}
-	mqConsumer.UnBindKey(keys...)
+	mqConsumer.UnBindKey(kk...)
 }
 
 // ReadRabbitMQ 获得消费者消息通道 (Obsolete,please just call RecvRabbitMQ(func(key string,body []body)))

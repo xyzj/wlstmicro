@@ -20,7 +20,6 @@ import (
 
 // NewHTTPEngine 创建gin引擎
 func NewHTTPEngine(f ...gin.HandlerFunc) *gin.Engine {
-	getReady()
 	r := gin.New()
 	// 中间件
 	//cors
