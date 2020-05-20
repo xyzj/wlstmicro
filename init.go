@@ -375,9 +375,16 @@ func LoadConfigure() {
 	rabbitConf.gpsTiming, _ = strconv.ParseInt(AppConf.GetItemDefault("mq_gpstiming", "0", "是否使用广播的gps时间进行对时操作,0-不启用，1-启用（30～900s内进行矫正），2-忽略误差范围强制矫正"), 10, 0)
 	HTTPTLS.ClientCA = AppConf.GetItemDefault("client_ca", "", "双向认证用ca文件路径")
 	AppConf.Save()
-	// 以下三个参数不自动生成
+	if domainName != "" {
+		HTTPTLS.Cert = filepath.Join(baseCAPath, domainName+".crt")
+		HTTPTLS.Key = filepath.Join(baseCAPath, domainName+".key")
+	}
+	// 以下三个参数不自动生成，影响dorequest性能
+	// request超时时间（秒）
 	var trTimeo = time.Second * 60
+	// 最大idle连接保持数量
 	var trMaxidle = 0
+	// 每个host允许的最大连接数
 	var trMaxconnPerHost = 10
 	s, err := AppConf.GetItem("tr_timeo")
 	if err == nil {
@@ -404,10 +411,6 @@ func LoadConfigure() {
 				InsecureSkipVerify: true,
 			},
 		},
-	}
-	if domainName != "" {
-		HTTPTLS.Cert = filepath.Join(baseCAPath, domainName+".crt")
-		HTTPTLS.Key = filepath.Join(baseCAPath, domainName+".key")
 	}
 }
 
