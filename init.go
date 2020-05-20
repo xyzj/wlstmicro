@@ -340,6 +340,12 @@ func RunFramework(om *OptionFramework) {
 			}
 		}
 	}
+	// 执行gps对时
+	if rabbitConf != nil {
+		if rabbitConf.gpsTiming != 0 {
+			go newGPSConsumer(strconv.Itoa(*WebPort))
+		}
+	}
 	// 执行额外方法
 	if om.ExpandFunc != nil {
 		om.ExpandFunc()
@@ -349,12 +355,6 @@ func RunFramework(om *OptionFramework) {
 			if v.Func != nil {
 				v.Func(v.Args...)
 			}
-		}
-	}
-	// 执行gps对时
-	if rabbitConf != nil {
-		if rabbitConf.gpsTiming != 0 {
-			go newGPSConsumer(strconv.Itoa(*WebPort))
 		}
 	}
 	for {

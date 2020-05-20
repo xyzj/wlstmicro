@@ -122,8 +122,9 @@ func DoRequest(req *http.Request, logdetail ...string) (int, []byte, map[string]
 	for k := range resp.Header {
 		h[k] = resp.Header.Get(k)
 	}
-	WriteLog("HTTP", fmt.Sprintf("%s response %d from %s|%v", req.Method, resp.StatusCode, req.URL.String(), b.String()), level)
-	return resp.StatusCode, b.Bytes(), h, nil
+	sc := resp.StatusCode
+	WriteLog("HTTP", fmt.Sprintf("%s response %d from %s|%v", req.Method, sc, req.URL.String(), b.String()), level)
+	return sc, b.Bytes(), h, nil
 }
 
 // PrepareToken 获取User-Token信息
