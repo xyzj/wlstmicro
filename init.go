@@ -125,16 +125,6 @@ func init() {
 	if gopsu.IsExist(filepath.Join(baseCAPath, "rmq-ca.pem")) {
 		RMQTLS.ClientCA = filepath.Join(baseCAPath, "rmq-ca.pem")
 	}
-	HTTPClient = &http.Client{
-		Timeout: time.Duration(time.Second * 60),
-		Transport: &http.Transport{
-			IdleConnTimeout: time.Second * 10,
-			MaxConnsPerHost: 10,
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true,
-			},
-		},
-	}
 }
 
 // OptionETCD ETCD配置
@@ -385,6 +375,36 @@ func LoadConfigure() {
 	rabbitConf.gpsTiming, _ = strconv.ParseInt(AppConf.GetItemDefault("mq_gpstiming", "0", "是否使用广播的gps时间进行对时操作,0-不启用，1-启用（30～900s内进行矫正），2-忽略误差范围强制矫正"), 10, 0)
 	HTTPTLS.ClientCA = AppConf.GetItemDefault("client_ca", "", "双向认证用ca文件路径")
 	AppConf.Save()
+	// 以下三个参数不自动生成
+	var trTimeo = time.Second * 60
+	var trMaxidle = 0
+	var trMaxconnPerHost = 10
+	s, err := AppConf.GetItem("tr_timeo")
+	if err == nil {
+		if gopsu.String2Int(s, 10) > 2 {
+			trTimeo = time.Second * time.Duration(gopsu.String2Int(s, 10))
+		}
+	}
+	s, err = AppConf.GetItem("tr_maxidle")
+	if err == nil {
+		trMaxidle = gopsu.String2Int(s, 10)
+	}
+	s, err = AppConf.GetItem("tr_maxconn_perhost")
+	if err == nil {
+		trMaxconnPerHost = gopsu.String2Int(s, 10)
+	}
+	HTTPClient = &http.Client{
+		Timeout: time.Duration(trTimeo),
+		Transport: &http.Transport{
+			IdleConnTimeout:     time.Second * 10,
+			MaxConnsPerHost:     trMaxconnPerHost,
+			MaxIdleConns:        trMaxidle,
+			MaxIdleConnsPerHost: 1,
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
+		},
+	}
 	if domainName != "" {
 		HTTPTLS.Cert = filepath.Join(baseCAPath, domainName+".crt")
 		HTTPTLS.Key = filepath.Join(baseCAPath, domainName+".key")
