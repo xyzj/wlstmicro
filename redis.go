@@ -14,7 +14,7 @@ import (
 var (
 	// redisClient redis客户端
 	redisClient *redis.Client
-	redisConf  = &redisConfigure{}
+	redisConf   = &redisConfigure{}
 )
 
 // redis配置
