@@ -1,20 +1,22 @@
 package wlstmicro
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/go-redis/redis/v8"
+	"github.com/go-redis/redis"
 	"github.com/tidwall/sjson"
 	"github.com/xyzj/gopsu"
 )
 
 var (
 	// redisClient redis客户端
-	redisClient *redis.Client
-	redisConf   = &redisConfigure{}
+	redisClient   *redis.Client
+	redisConf     = &redisConfigure{}
+	redisCtxTimeo = 3 * time.Second
 )
 
 // redis配置
@@ -60,7 +62,9 @@ func NewRedisClient() bool {
 		Password: redisConf.pwd,
 		DB:       redisConf.database,
 	})
-	_, err = redisClient.Ping().Result()
+	ctx, cancel := context.WithTimeout(context.Background(), redisCtxTimeo)
+	defer cancel()
+	_, err = redisClient.Ping(ctx).Result()
 	if err != nil {
 		WriteError("REDIS", "Failed connect to server "+redisConf.addr+"|"+err.Error())
 		return false
@@ -85,7 +89,9 @@ func ExpireRedis(key string, expire time.Duration) error {
 	if redisClient == nil {
 		return fmt.Errorf("redis is not ready")
 	}
-	err := redisClient.Expire(AppendRootPathRedis(key), expire).Err()
+	ctx, cancel := context.WithTimeout(context.Background(), redisCtxTimeo)
+	defer cancel()
+	err := redisClient.Expire(ctx, AppendRootPathRedis(key), expire).Err()
 	if err != nil {
 		WriteError("REDIS", "Failed update redis expire: "+key+"|"+err.Error())
 		return err
@@ -102,7 +108,9 @@ func WriteRedis(key string, value interface{}, expire time.Duration) error {
 	if redisClient == nil {
 		return fmt.Errorf("redis is not ready")
 	}
-	err := redisClient.Set(AppendRootPathRedis(key), value, expire).Err()
+	ctx, cancel := context.WithTimeout(context.Background(), redisCtxTimeo)
+	defer cancel()
+	err := redisClient.Set(ctx, AppendRootPathRedis(key), value, expire).Err()
 	if err != nil {
 		WriteError("REDIS", "Failed write redis data: "+key+"|"+err.Error())
 		return err
@@ -119,7 +127,9 @@ func EraseRedis(key ...string) {
 	for k, v := range key {
 		keys[k] = AppendRootPathRedis(v)
 	}
-	err := redisClient.Del(keys...).Err()
+	ctx, cancel := context.WithTimeout(context.Background(), redisCtxTimeo)
+	defer cancel()
+	err := redisClient.Del(ctx, keys...).Err()
 	if err != nil {
 		WriteError("REDIS", fmt.Sprintf("Failed erase redis data: %+v|%s", keys, err.Error()))
 	}
@@ -131,12 +141,16 @@ func EraseAllRedis(key string) {
 	if !redisConf.enable || redisClient == nil {
 		return
 	}
-	val := redisClient.Keys(AppendRootPathRedis(key))
+	ctx, cancel := context.WithTimeout(context.Background(), redisCtxTimeo)
+	defer cancel()
+	val := redisClient.Keys(ctx, AppendRootPathRedis(key))
 	if val.Err() != nil {
 		return
 	}
 	if len(val.Val()) > 0 {
-		err := redisClient.Del(val.Val()...).Err()
+		ctx2, cancel := context.WithTimeout(context.Background(), redisCtxTimeo)
+		defer cancel()
+		err := redisClient.Del(ctx2, val.Val()...).Err()
 		if err != nil {
 			WriteError("REDIS", "Failed erase all redis data: "+key+"|"+err.Error())
 		}
@@ -150,7 +164,9 @@ func ReadRedis(key string) (string, error) {
 		return "", fmt.Errorf("redis is not ready")
 	}
 	key = AppendRootPathRedis(key)
-	val := redisClient.Get(key)
+	ctx, cancel := context.WithTimeout(context.Background(), redisCtxTimeo)
+	defer cancel()
+	val := redisClient.Get(ctx, key)
 	if val.Err() != nil {
 		WriteError("REDIS", "Failed read redis data: "+key+"|"+val.Err().Error())
 		return "", val.Err()
@@ -163,7 +179,9 @@ func ReadAllRedisKeys(key string) *redis.StringSliceCmd {
 	if !redisConf.enable {
 		return &redis.StringSliceCmd{}
 	}
-	return redisClient.Keys(AppendRootPathRedis(key))
+	ctx, cancel := context.WithTimeout(context.Background(), redisCtxTimeo)
+	defer cancel()
+	return redisClient.Keys(ctx, AppendRootPathRedis(key))
 }
 
 // ReadAllRedis 模糊读redis
@@ -172,14 +190,18 @@ func ReadAllRedis(key string) ([]string, error) {
 		return []string{}, fmt.Errorf("redis is not ready")
 	}
 	key = AppendRootPathRedis(key)
-	val := redisClient.Keys(key)
+	ctx, cancel := context.WithTimeout(context.Background(), redisCtxTimeo)
+	defer cancel()
+	val := redisClient.Keys(ctx, key)
 	if val.Err() != nil {
 		WriteError("REDIS", "Failed read redis data: "+key+"|"+val.Err().Error())
 		return []string{}, val.Err()
 	}
 	var s = make([]string, 0)
 	for _, v := range val.Val() {
-		vv := redisClient.Get(v)
+		ctx, cancel := context.WithTimeout(context.Background(), redisCtxTimeo)
+		defer cancel()
+		vv := redisClient.Get(ctx, v)
 		if vv.Err() == nil {
 			s = append(s, vv.Val())
 		}
