@@ -14,7 +14,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gin-contrib/pprof"
 	ginmiddleware "github.com/xyzj/gopsu/gin-middleware"
 
 	"github.com/gin-gonic/gin"
@@ -318,11 +317,6 @@ func RunFramework(om *OptionFramework) {
 				if om.UseHTTP.GinEngine == nil {
 					om.UseHTTP.GinEngine = NewHTTPEngine()
 				}
-			}
-			if *Debug {
-				pprof.Register(om.UseHTTP.GinEngine)
-			} else {
-				gin.SetMode(gin.ReleaseMode)
 			}
 			NewHTTPService(om.UseHTTP.GinEngine)
 			if VersionInfo != "" {

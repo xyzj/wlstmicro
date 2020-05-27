@@ -11,6 +11,7 @@ import (
 
 	"github.com/gin-contrib/cors"
 	gingzip "github.com/gin-contrib/gzip"
+	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/render"
 	"github.com/tidwall/gjson"
@@ -20,6 +21,9 @@ import (
 
 // NewHTTPEngine 创建gin引擎
 func NewHTTPEngine(f ...gin.HandlerFunc) *gin.Engine {
+	if !*Debug {
+		gin.SetMode(gin.ReleaseMode)
+	}
 	r := gin.New()
 	// 中间件
 	//cors
@@ -60,6 +64,9 @@ func NewHTTPEngine(f ...gin.HandlerFunc) *gin.Engine {
 	r.GET("/clearlog", ginmiddleware.CheckRequired("name"), ginmiddleware.Clearlog)
 	r.GET("/runtime", ginmiddleware.PageRuntime)
 	r.Static("/static", filepath.Join(gopsu.GetExecDir(), "static"))
+	if *Debug {
+		pprof.Register(r)
+	}
 	return r
 }
 
