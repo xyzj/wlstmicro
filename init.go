@@ -204,7 +204,7 @@ type OptionFramework struct {
 	// 启动参数处理方法，在模块初始化之前执行
 	// 非线程执行，注意不要阻塞
 	// 提交方法名称时最后不要加`()`，表示把方法作为参数，而不是把方法的执行结果回传
-	FlagFunc func()
+	FrontFunc func()
 	// 无参数的扩展方法，用于处理额外的数据或变量，所有模块初始化完成后执行
 	// 非线程执行，注意不要阻塞
 	// 提交方法名称时最后不要加`()`，表示把方法作为参数，而不是把方法的执行结果回传
@@ -240,8 +240,8 @@ func getFlagReady() {
 // RunFramework 初始化框架相关参数
 func RunFramework(om *OptionFramework) {
 	getFlagReady()
-	if om.FlagFunc != nil {
-		om.FlagFunc()
+	if om.FrontFunc != nil {
+		om.FrontFunc()
 	}
 	if om.LoggerMark == "" {
 		loggerMark = fmt.Sprint(*WebPort)
