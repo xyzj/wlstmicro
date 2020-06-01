@@ -219,7 +219,8 @@ type OptionFramework struct {
 	// 		Args: []interface{}{"aaa",111},
 	// 	},
 	// }
-	ExpandFuncsWithArgs []*ExpandFunc
+	// ExpandFuncsWithArgs []*ExpandFunc
+	ExpandFuncs []func()
 }
 
 // getFlagReady 处理启动参数
@@ -334,11 +335,12 @@ func RunFramework(om *OptionFramework) {
 	if om.ExpandFunc != nil {
 		om.ExpandFunc()
 	}
-	if om.ExpandFuncsWithArgs != nil {
+	if om.ExpandFuncs != nil {
 		for _, v := range om.ExpandFuncsWithArgs {
-			if v.Func != nil {
-				v.Func(v.Args...)
-			}
+			v()
+			// if v.Func != nil {
+			// 	v.Func(v.Args...)
+			// }
 		}
 	}
 	for {
