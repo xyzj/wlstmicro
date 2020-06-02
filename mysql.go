@@ -108,6 +108,9 @@ func NewMysqlClient(mark string) bool {
 
 // MaintainMrgTables 维护mrg引擎表
 func MaintainMrgTables() {
+	if !dbConf.enable {
+		return
+	}
 	var mrgLocker sync.WaitGroup
 MAINTAIN:
 	go func() {
@@ -121,6 +124,15 @@ MAINTAIN:
 		for {
 			t := time.Now()
 			if t.Minute() == 1 && t.Hour() == 2 {
+				// 重新刷新配置
+				dbConf.mrgTables = strings.Split(AppConf.GetItemDefault("db_mrg_tables", "", "使用mrg_myisam引擎分表的总表名称，用`,`分割多个总表"), ",")
+				dbConf.mrgMaxSubTables = gopsu.String2Int(AppConf.GetItemDefault("db_mrg_maxsubtables", "10", "分表子表数量，最小为1"), 10)
+				dbConf.mrgSubTableSize = gopsu.String2Int64(AppConf.GetItemDefault("db_mrg_subtablesize", "1800", "子表最大磁盘空间容量（MB），当超过该值时，进行分表操作,推荐默认值1800"), 10)
+				if dbConf.mrgSubTableSize < 1 {
+					dbConf.mrgSubTableSize = 10
+				}
+				dbConf.mrgSubTableRows = gopsu.String2Int64(AppConf.GetItemDefault("db_mrg_subtablerows", "4500000", "子表最大行数，当超过该值时，进行分表操作，推荐默认值4500000"), 10)
+
 				for _, v := range dbConf.mrgTables {
 					tableName := strings.TrimSpace(v)
 					if tableName == "" {

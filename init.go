@@ -142,6 +142,8 @@ type OptionETCD struct {
 type OptionSQL struct {
 	// 缓存文件标识
 	CacheMark string
+	// 启动分表线程
+	DoMERGE bool
 	// 启用
 	Activation bool
 }
@@ -307,7 +309,11 @@ func RunFramework(om *OptionFramework) {
 			if om.UseSQL.CacheMark == "" {
 				om.UseSQL.CacheMark = strconv.FormatInt(int64(*WebPort), 10)
 			}
-			NewMysqlClient(om.UseSQL.CacheMark)
+			if NewMysqlClient(om.UseSQL.CacheMark) {
+				if om.UseSQL.DoMERGE {
+					MaintainMrgTables()
+				}
+			}
 		}
 	}
 	if om.UseHTTP != nil {
