@@ -311,7 +311,7 @@ func RunFramework(om *OptionFramework) {
 			}
 			if NewMysqlClient(om.UseSQL.CacheMark) {
 				if om.UseSQL.DoMERGE {
-					MaintainMrgTables()
+					go MaintainMrgTables()
 				}
 			}
 		}
