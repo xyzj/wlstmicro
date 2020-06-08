@@ -70,22 +70,24 @@ func NewMQProducer() bool {
 		WriteError("SYS", "Configuration files should be loaded first")
 		return false
 	}
-	rabbitConf.addr = AppConf.GetItemDefault("mq_addr", "127.0.0.1:5672", "mq服务地址,ip:port格式")
+	rabbitConf.addr = AppConf.GetItemDefault("mq_addr", "127.0.0.1:5671", "mq服务地址,ip:port格式")
 	rabbitConf.user = AppConf.GetItemDefault("mq_user", "arx7", "mq连接用户名")
 	rabbitConf.pwd = gopsu.DecodeString(AppConf.GetItemDefault("mq_pwd", "WcELCNqP5dCpvMmMbKDdvgb", "mq连接密码"))
 	rabbitConf.vhost = AppConf.GetItemDefault("mq_vhost", "", "mq虚拟域名")
 	rabbitConf.exchange = AppConf.GetItemDefault("mq_exchange", "luwak_topic", "mq交换机名称")
 	rabbitConf.enable, _ = strconv.ParseBool(AppConf.GetItemDefault("mq_enable", "true", "是否启用rabbitmq"))
-	rabbitConf.usetls, _ = strconv.ParseBool(AppConf.GetItemDefault("mq_tls", "false", "是否使用证书连接rabbitmq服务"))
-	if rabbitConf.usetls {
-		rabbitConf.addr = strings.Replace(rabbitConf.addr, "5672", "5671", 1)
+	rabbitConf.usetls, _ = strconv.ParseBool(AppConf.GetItemDefault("mq_tls", "true", "是否使用证书连接rabbitmq服务"))
+	rmqProtocol := "amqps"
+	if !rabbitConf.usetls {
+		rabbitConf.addr = strings.Replace(rabbitConf.addr, "5671", "5672", 1)
+		rmqProtocol = "amqp"
 	}
 	AppConf.Save()
 	rabbitConf.show()
 	if !rabbitConf.enable {
 		return false
 	}
-	mqProducer = mq.NewProducer(rabbitConf.exchange, fmt.Sprintf("amqp://%s:%s@%s/%s", rabbitConf.user, rabbitConf.pwd, rabbitConf.addr, rabbitConf.vhost), false)
+	mqProducer = mq.NewProducer(rabbitConf.exchange, fmt.Sprintf("%s://%s:%s@%s/%s", rmqProtocol, rabbitConf.user, rabbitConf.pwd, rabbitConf.addr, rabbitConf.vhost), false)
 	mqProducer.SetLogger(&StdLogger{
 		Name:        "MQ",
 		LogReplacer: strings.NewReplacer("[", "", "]", ""),
@@ -93,7 +95,7 @@ func NewMQProducer() bool {
 	if rabbitConf.usetls {
 		tc, err := gopsu.GetClientTLSConfig(RMQTLS.Cert, RMQTLS.Key, RMQTLS.ClientCA)
 		if err != nil {
-			WriteError("MQ", "RabbitMQ TLS Error: "+err.Error())
+			WriteError("MQ", "RabbitMQ Producer TLS Error: "+err.Error())
 			return false
 		}
 		return mqProducer.StartTLS(tc)
@@ -107,18 +109,20 @@ func NewMQConsumer(svrName string) bool {
 		WriteError("SYS", "Configuration files should be loaded first")
 		return false
 	}
-	rabbitConf.addr = AppConf.GetItemDefault("mq_addr", "127.0.0.1:5672", "mq服务地址,ip:port格式")
+	rabbitConf.addr = AppConf.GetItemDefault("mq_addr", "127.0.0.1:5671", "mq服务地址,ip:port格式")
 	rabbitConf.user = AppConf.GetItemDefault("mq_user", "arx7", "mq连接用户名")
 	rabbitConf.pwd = gopsu.DecodeString(AppConf.GetItemDefault("mq_pwd", "WcELCNqP5dCpvMmMbKDdvgb", "mq连接密码"))
 	rabbitConf.vhost = AppConf.GetItemDefault("mq_vhost", "", "mq虚拟域名")
 	rabbitConf.exchange = AppConf.GetItemDefault("mq_exchange", "luwak_topic", "mq交换机名称")
 	rabbitConf.queueRandom, _ = strconv.ParseBool(AppConf.GetItemDefault("mq_queue_random", "false", "随机队列名，true-用于独占模式，false-负载均衡（默认）"))
-	rabbitConf.durable, _ = strconv.ParseBool(AppConf.GetItemDefault("mq_durable", "true", "队列是否持久化"))
+	rabbitConf.durable, _ = strconv.ParseBool(AppConf.GetItemDefault("mq_durable", "false", "队列是否持久化"))
 	rabbitConf.autodel, _ = strconv.ParseBool(AppConf.GetItemDefault("mq_autodel", "true", "队列在未使用时是否删除"))
 	rabbitConf.enable, _ = strconv.ParseBool(AppConf.GetItemDefault("mq_enable", "true", "是否启用rabbitmq"))
-
-	if rabbitConf.usetls {
-		rabbitConf.addr = strings.Replace(rabbitConf.addr, "5672", "5671", 1)
+	rabbitConf.usetls, _ = strconv.ParseBool(AppConf.GetItemDefault("mq_tls", "true", "是否使用证书连接rabbitmq服务"))
+	rmqProtocol := "amqps"
+	if !rabbitConf.usetls {
+		rabbitConf.addr = strings.Replace(rabbitConf.addr, "5671", "5672", 1)
+		rmqProtocol = "amqp"
 	}
 	AppConf.Save()
 
@@ -133,10 +137,23 @@ func NewMQConsumer(svrName string) bool {
 		rabbitConf.durable = false
 		rabbitConf.autodel = true
 	}
-	mqConsumer = mq.NewConsumer(rabbitConf.exchange, fmt.Sprintf("amqp://%s:%s@%s/%s", rabbitConf.user, rabbitConf.pwd, rabbitConf.addr, rabbitConf.vhost), rabbitConf.queue, rabbitConf.durable, rabbitConf.autodel, false)
+	mqConsumer = mq.NewConsumer(rabbitConf.exchange,
+		fmt.Sprintf("%s://%s:%s@%s/%s", rmqProtocol, rabbitConf.user, rabbitConf.pwd, rabbitConf.addr, rabbitConf.vhost),
+		rabbitConf.queue,
+		rabbitConf.durable,
+		rabbitConf.autodel,
+		false)
 	mqConsumer.SetLogger(&StdLogger{
 		Name: "MQ",
 	})
+	if rabbitConf.usetls {
+		tc, err := gopsu.GetClientTLSConfig(RMQTLS.Cert, RMQTLS.Key, RMQTLS.ClientCA)
+		if err != nil {
+			WriteError("MQ", "RabbitMQ Consumer TLS Error: "+err.Error())
+			return false
+		}
+		return mqConsumer.StartTLS(tc)
+	}
 	return mqConsumer.Start()
 }
 

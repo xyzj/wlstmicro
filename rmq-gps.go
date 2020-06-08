@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"math"
 	"os/exec"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -20,20 +22,34 @@ var (
 
 // 启用gps校时
 func newGPSConsumer(svrName string) {
-	rabbitConf.addr = AppConf.GetItemDefault("mq_addr", "127.0.0.1:5672", "mq服务地址,ip:port格式")
+	rabbitConf.addr = AppConf.GetItemDefault("mq_addr", "127.0.0.1:5671", "mq服务地址,ip:port格式")
 	rabbitConf.user = AppConf.GetItemDefault("mq_user", "arx7", "mq连接用户名")
 	rabbitConf.pwd = gopsu.DecodeString(AppConf.GetItemDefault("mq_pwd", "WcELCNqP5dCpvMmMbKDdvgb", "mq连接密码"))
 	rabbitConf.vhost = AppConf.GetItemDefault("mq_vhost", "", "mq虚拟域名")
 	rabbitConf.exchange = AppConf.GetItemDefault("mq_exchange", "luwak_topic", "mq交换机名称")
+	rabbitConf.usetls, _ = strconv.ParseBool(AppConf.GetItemDefault("mq_tls", "true", "是否使用证书连接rabbitmq服务"))
+	rmqProtocol := "amqps"
+	if !rabbitConf.usetls {
+		rabbitConf.addr = strings.Replace(rabbitConf.addr, "5671", "5672", 1)
+		rmqProtocol = "amqp"
+	}
 	AppConf.Save()
 	queue := rootPath + "_" + svrName + "_gps_" + MD5Worker.Hash([]byte(time.Now().Format("150405000")))
 	durable := false
 	autodel := true
-	gpsConsumer = mq.NewConsumer(rabbitConf.exchange, fmt.Sprintf("amqp://%s:%s@%s/%s", rabbitConf.user, rabbitConf.pwd, rabbitConf.addr, rabbitConf.vhost), queue, durable, autodel, false)
+	gpsConsumer = mq.NewConsumer(rabbitConf.exchange, fmt.Sprintf("%s://%s:%s@%s/%s", rmqProtocol, rabbitConf.user, rabbitConf.pwd, rabbitConf.addr, rabbitConf.vhost), queue, durable, autodel, false)
 	gpsConsumer.SetLogger(&StdLogger{
 		Name: "MQGPS",
 	})
 
+	if rabbitConf.usetls {
+		tc, err := gopsu.GetClientTLSConfig(RMQTLS.Cert, RMQTLS.Key, RMQTLS.ClientCA)
+		if err != nil {
+			WriteError("MQ", "RabbitMQ TLS Error: "+err.Error())
+			return
+		}
+		gpsConsumer.StartTLS(tc)
+	}
 	gpsConsumer.Start()
 
 	gpsConsumer.BindKey(AppendRootPathRabbit("gps.serlreader.#"))

@@ -344,9 +344,6 @@ func RunFramework(om *OptionFramework) {
 	if om.ExpandFuncs != nil {
 		for _, v := range om.ExpandFuncs {
 			v()
-			// if v.Func != nil {
-			// 	v.Func(v.Args...)
-			// }
 		}
 	}
 	for {
