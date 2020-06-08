@@ -42,12 +42,12 @@ func NewETCDClient(svrName, svrType, svrProtocol string) bool {
 		WriteError("SYS", "Configuration files should be loaded first")
 		return false
 	}
-	etcdConf.addr = AppConf.GetItemDefault("etcd_addr", "127.0.0.1:2379", "etcd服务地址,ip:port格式")
+	etcdConf.addr = AppConf.GetItemDefault("etcd_addr", "127.0.0.1:2378", "etcd服务地址,ip:port格式")
 	etcdConf.regAddr = AppConf.GetItemDefault("etcd_reg", "127.0.0.1", "服务注册地址,ip[:port]格式，不指定port时，自动使用http启动参数的端口")
 	etcdConf.enable, _ = strconv.ParseBool(AppConf.GetItemDefault("etcd_enable", "true", "是否启用etcd"))
-	etcdConf.usetls, _ = strconv.ParseBool(AppConf.GetItemDefault("etcd_tls", "false", "是否使用证书连接etcd服务"))
-	if etcdConf.usetls {
-		etcdConf.addr = strings.Replace(etcdConf.addr, "2379", "2378", 1)
+	etcdConf.usetls, _ = strconv.ParseBool(AppConf.GetItemDefault("etcd_tls", "true", "是否使用证书连接etcd服务"))
+	if !etcdConf.usetls {
+		etcdConf.addr = strings.Replace(etcdConf.addr, "2378", "2379", 1)
 	}
 	if etcdConf.regAddr == "127.0.0.1" || etcdConf.regAddr == "" {
 		etcdConf.regAddr, _ = gopsu.ExternalIP()
