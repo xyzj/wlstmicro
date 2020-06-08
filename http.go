@@ -108,8 +108,10 @@ func NewHTTPService(r *gin.Engine) {
 // 返回statusCode, body, headers, error
 func DoRequest(req *http.Request, logdetail ...string) (int, []byte, map[string]string, error) {
 	level := 20
-	if len(logdetail) == 0 || logdetail[0] == "nil" {
-		level = 0
+	if !*Debug {
+		if len(logdetail) == 0 || logdetail[0] == "nil" {
+			level = 0
+		}
 	}
 
 	WriteLog("HTTP", fmt.Sprintf("%s request to %s|%s", req.Method, req.URL.String(), strings.Join(logdetail, ",")), level)
