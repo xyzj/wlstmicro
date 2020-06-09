@@ -93,36 +93,50 @@ func init() {
 		baseCAPath = gopsu.DecodeString(gopsu.TrimString(string(a)))
 	}
 	ETCDTLS = &tlsFiles{
-		Cert:     filepath.Join(baseCAPath, "etcd.pem"),
-		Key:      filepath.Join(baseCAPath, "etcd-key.pem"),
+		Cert:     filepath.Join(baseCAPath, "client-cert.pem"),
+		Key:      filepath.Join(baseCAPath, "client-key.pem"),
 		ClientCA: filepath.Join(baseCAPath, "rootca.pem"),
 	}
 	if gopsu.IsExist(filepath.Join(baseCAPath, "etcd-ca.pem")) {
 		ETCDTLS.ClientCA = filepath.Join(baseCAPath, "etcd-ca.pem")
 	}
-	HTTPTLS = &tlsFiles{
-		Cert: filepath.Join(baseCAPath, "http.pem"),
-		Key:  filepath.Join(baseCAPath, "http-key.pem"),
-		// ClientCA: filepath.Join(baseCAPath, "rootca.pem"),
+	if gopsu.IsExist(filepath.Join(baseCAPath, "etcd-cert.pem")) {
+		ETCDTLS.Cert = filepath.Join(baseCAPath, "etcd-cert.pem")
 	}
-	// if gopsu.IsExist(filepath.Join(baseCAPath, "http-ca.pem")) {
-	// 	HTTPTLS.ClientCA = filepath.Join(baseCAPath, "http-ca.pem")
-	// }
+	if gopsu.IsExist(filepath.Join(baseCAPath, "etcd-key.pem")) {
+		ETCDTLS.Key = filepath.Join(baseCAPath, "etcd-key.pem")
+	}
+	HTTPTLS = &tlsFiles{
+		Cert: filepath.Join(baseCAPath, "client-cert.pem"),
+		Key:  filepath.Join(baseCAPath, "client-key.pem"),
+	}
 	GRPCTLS = &tlsFiles{
-		Cert:     filepath.Join(baseCAPath, "grpc.pem"),
-		Key:      filepath.Join(baseCAPath, "grpc-key.pem"),
+		Cert:     filepath.Join(baseCAPath, "client-cert.pem"),
+		Key:      filepath.Join(baseCAPath, "client-key.pem"),
 		ClientCA: filepath.Join(baseCAPath, "rootca.pem"),
 	}
 	if gopsu.IsExist(filepath.Join(baseCAPath, "grpc-ca.pem")) {
 		GRPCTLS.ClientCA = filepath.Join(baseCAPath, "grpc-ca.pem")
 	}
+	if gopsu.IsExist(filepath.Join(baseCAPath, "grpc-cert.pem")) {
+		GRPCTLS.Cert = filepath.Join(baseCAPath, "grpc-cert.pem")
+	}
+	if gopsu.IsExist(filepath.Join(baseCAPath, "grpc-key.pem")) {
+		GRPCTLS.Key = filepath.Join(baseCAPath, "grpc-key.pem")
+	}
 	RMQTLS = &tlsFiles{
-		Cert:     filepath.Join(baseCAPath, "rmq.pem"),
-		Key:      filepath.Join(baseCAPath, "rmq-key.pem"),
+		Cert:     filepath.Join(baseCAPath, "client-cert.pem"),
+		Key:      filepath.Join(baseCAPath, "client-key.pem"),
 		ClientCA: filepath.Join(baseCAPath, "rootca.pem"),
 	}
 	if gopsu.IsExist(filepath.Join(baseCAPath, "rmq-ca.pem")) {
 		RMQTLS.ClientCA = filepath.Join(baseCAPath, "rmq-ca.pem")
+	}
+	if gopsu.IsExist(filepath.Join(baseCAPath, "rmq-cert.pem")) {
+		RMQTLS.Cert = filepath.Join(baseCAPath, "rmq-cert.pem")
+	}
+	if gopsu.IsExist(filepath.Join(baseCAPath, "rmq-key.pem")) {
+		RMQTLS.Key = filepath.Join(baseCAPath, "rmq-key.pem")
 	}
 }
 
