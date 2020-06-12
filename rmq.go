@@ -148,12 +148,12 @@ func NewMQConsumer(svrName string) bool {
 		Name: "MQ",
 	})
 	if rabbitConf.usetls {
-		tc, err := gopsu.GetClientTLSConfig(RMQTLS.Cert, RMQTLS.Key, RMQTLS.ClientCA)
-		if err != nil {
-			WriteError("MQ", "RabbitMQ Consumer TLS Error: "+err.Error())
-			return false
-		}
-		return mqConsumer.StartTLS(tc)
+		// tc, err := gopsu.GetClientTLSConfig(RMQTLS.Cert, RMQTLS.Key, RMQTLS.ClientCA)
+		// if err != nil {
+		// 	WriteError("MQ", "RabbitMQ Consumer TLS Error: "+err.Error())
+		// 	return false
+		// }
+		return mqConsumer.StartTLS(&tls.Config{InsecureSkipVerify: true})
 	}
 	return mqConsumer.Start()
 }
