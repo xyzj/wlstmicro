@@ -1,6 +1,7 @@
 package wlstmicro
 
 import (
+	"crypto/tls"
 	"encoding/base64"
 	"fmt"
 	"strconv"
@@ -93,12 +94,12 @@ func NewMQProducer() bool {
 		LogReplacer: strings.NewReplacer("[", "", "]", ""),
 	})
 	if rabbitConf.usetls {
-		tc, err := gopsu.GetClientTLSConfig(RMQTLS.Cert, RMQTLS.Key, RMQTLS.ClientCA)
-		if err != nil {
-			WriteError("MQ", "RabbitMQ Producer TLS Error: "+err.Error())
-			return false
-		}
-		return mqProducer.StartTLS(tc)
+		// tc, err := gopsu.GetClientTLSConfig(RMQTLS.Cert, RMQTLS.Key, RMQTLS.ClientCA)
+		// if err != nil {
+		// 	WriteError("MQ", "RabbitMQ Producer TLS Error: "+err.Error())
+		// 	return false
+		// }
+		return mqProducer.StartTLS(&tls.Config{InsecureSkipVerify: true})
 	}
 	return mqProducer.Start()
 }
