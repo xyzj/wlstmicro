@@ -163,6 +163,7 @@ func NewMQConsumer(svrName string) bool {
 func RecvRabbitMQ(f func(key string, body []byte)) {
 	var mqRecvWaitLock sync.WaitGroup
 RECV:
+	mqRecvWaitLock.Add(1)
 	go func() {
 		defer func() {
 			if err := recover(); err != nil {
@@ -170,7 +171,6 @@ RECV:
 			}
 			mqRecvWaitLock.Done()
 		}()
-		mqRecvWaitLock.Add(1)
 		rcvMQ, err := mqConsumer.Recv()
 		if err != nil {
 			WriteError("MQ", "Rcv Err: "+err.Error())

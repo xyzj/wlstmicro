@@ -1,6 +1,7 @@
 package wlstmicro
 
 import (
+	"crypto/tls"
 	"fmt"
 	"math"
 	"os/exec"
@@ -43,14 +44,15 @@ func newGPSConsumer(svrName string) {
 	})
 
 	if rabbitConf.usetls {
-		tc, err := gopsu.GetClientTLSConfig(RMQTLS.Cert, RMQTLS.Key, RMQTLS.ClientCA)
-		if err != nil {
-			WriteError("MQ", "RabbitMQ TLS Error: "+err.Error())
-			return
-		}
-		gpsConsumer.StartTLS(tc)
+		// tc, err := gopsu.GetClientTLSConfig(RMQTLS.Cert, RMQTLS.Key, RMQTLS.ClientCA)
+		// if err != nil {
+		// 	WriteError("MQ", "RabbitMQ TLS Error: "+err.Error())
+		// 	return
+		// }
+		gpsConsumer.StartTLS(&tls.Config{InsecureSkipVerify: true})
+	} else {
+		gpsConsumer.Start()
 	}
-	gpsConsumer.Start()
 
 	gpsConsumer.BindKey(AppendRootPathRabbit("gps.serlreader.#"))
 	go gpsRecv()
@@ -59,6 +61,7 @@ func newGPSConsumer(svrName string) {
 func gpsRecv() {
 	var gpsRecvWaitLock sync.WaitGroup
 RECV:
+	gpsRecvWaitLock.Add(1)
 	go func() {
 		defer func() {
 			if err := recover(); err != nil {
@@ -66,7 +69,6 @@ RECV:
 			}
 			gpsRecvWaitLock.Done()
 		}()
-		gpsRecvWaitLock.Add(1)
 		rcvMQ, err := gpsConsumer.Recv()
 		if err != nil {
 			WriteError("MQGPS", "Rcv Err: "+err.Error())
