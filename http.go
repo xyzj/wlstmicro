@@ -164,12 +164,22 @@ func PrepareToken(forceAbort ...bool) gin.HandlerFunc {
 			return
 		}
 		ans := gjson.Parse(x)
-		if !ans.Exists() {
+		if !ans.Exists() { // token内容异常
 			if shouldAbort {
 				c.Set("status", 0)
 				c.Set("detail", "User-Token illegal")
 				c.AbortWithStatusJSON(200, c.Keys)
 			}
+			EraseRedis(tokenPath)
+			return
+		}
+		if ans.Get("expire").Int() < time.Now().Unix() { // 用户过期
+			if shouldAbort {
+				c.Set("status", 0)
+				c.Set("detail", "Account has expired")
+				c.AbortWithStatusJSON(200, c.Keys)
+			}
+			EraseRedis(tokenPath)
 			return
 		}
 		c.Params = append(c.Params, gin.Param{
