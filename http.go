@@ -118,14 +118,14 @@ func DoRequest(req *http.Request, logdetail ...string) (int, []byte, map[string]
 	resp, err := HTTPClient.Do(req)
 	if err != nil {
 		WriteError("HTTP", "request error: "+err.Error())
-		return 0, nil, nil, err
+		return 502, nil, nil, err
 	}
 	defer resp.Body.Close()
 	var b bytes.Buffer
 	_, err = b.ReadFrom(resp.Body)
 	if err != nil {
 		WriteError("HTTP", "read body error: "+err.Error())
-		return 0, nil, nil, err
+		return 502, nil, nil, err
 	}
 	h := make(map[string]string)
 	for k := range resp.Header {
@@ -149,7 +149,7 @@ func PrepareToken(forceAbort ...bool) gin.HandlerFunc {
 			if shouldAbort {
 				c.Set("status", 0)
 				c.Set("detail", "User-Token illegal")
-				c.AbortWithStatusJSON(200, c.Keys)
+				c.AbortWithStatusJSON(401, c.Keys)
 			}
 			return
 		}
@@ -285,7 +285,7 @@ func DealWithSQLError(c *gin.Context, err error) bool {
 		c.Set("status", 0)
 		c.Set("detail", "sql error")
 		c.Set("xfile", 3)
-		c.PureJSON(200, c.Keys)
+		c.PureJSON(500, c.Keys)
 		return true
 	}
 	return false
