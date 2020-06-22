@@ -146,6 +146,10 @@ func PrepareToken(forceAbort ...bool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		uuid := c.GetHeader("User-Token")
 		if len(uuid) != 36 {
+			c.Params = append(c.Params, gin.Param{
+				Key:   "_prepareError",
+				Value: "User-Token illegal",
+			})
 			if shouldAbort {
 				c.Set("status", 0)
 				c.Set("detail", "User-Token illegal")
@@ -156,6 +160,10 @@ func PrepareToken(forceAbort ...bool) gin.HandlerFunc {
 		tokenPath := AppendRootPathRedis("usermanager/legal/" + MD5Worker.Hash([]byte(uuid)))
 		x, err := ReadRedis(tokenPath)
 		if err != nil {
+			c.Params = append(c.Params, gin.Param{
+				Key:   "_prepareError",
+				Value: "User-Token not found",
+			})
 			if shouldAbort {
 				c.Set("status", 0)
 				c.Set("detail", "User-Token not found")
@@ -165,6 +173,10 @@ func PrepareToken(forceAbort ...bool) gin.HandlerFunc {
 		}
 		ans := gjson.Parse(x)
 		if !ans.Exists() { // token内容异常
+			c.Params = append(c.Params, gin.Param{
+				Key:   "_prepareError",
+				Value: "User-Token can not understand",
+			})
 			if shouldAbort {
 				c.Set("status", 0)
 				c.Set("detail", "User-Token can not understand")
@@ -174,6 +186,10 @@ func PrepareToken(forceAbort ...bool) gin.HandlerFunc {
 			return
 		}
 		if ans.Get("expire").Int() < time.Now().Unix() { // 用户过期
+			c.Params = append(c.Params, gin.Param{
+				Key:   "_prepareError",
+				Value: "Account has expired",
+			})
 			if shouldAbort {
 				c.Set("status", 0)
 				c.Set("detail", "Account has expired")
