@@ -158,7 +158,7 @@ func PrepareToken(forceAbort ...bool) gin.HandlerFunc {
 		if err != nil {
 			if shouldAbort {
 				c.Set("status", 0)
-				c.Set("detail", "User-Token illegal")
+				c.Set("detail", "User-Token not found")
 				c.AbortWithStatusJSON(200, c.Keys)
 			}
 			return
@@ -167,7 +167,7 @@ func PrepareToken(forceAbort ...bool) gin.HandlerFunc {
 		if !ans.Exists() { // token内容异常
 			if shouldAbort {
 				c.Set("status", 0)
-				c.Set("detail", "User-Token illegal")
+				c.Set("detail", "User-Token can not understand")
 				c.AbortWithStatusJSON(200, c.Keys)
 			}
 			EraseRedis(tokenPath)
