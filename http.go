@@ -230,26 +230,28 @@ func PrepareToken(forceAbort ...bool) gin.HandlerFunc {
 			Key:   "_enableAPI",
 			Value: strings.Join(enableapi, ","),
 		})
-		// 更新redis的对应键值的有效期
-		if ans.Get("source").String() != "local" {
-			ExpireUserToken(uuid)
-		}
+		// // 更新redis的对应键值的有效期
+		// if ans.Get("source").String() != "local" {
+		// 	ExpireUserToken(uuid)
+		// }
 	}
 }
 
 // RenewToken 更新uuid时效
-func RenewToken(c *gin.Context) {
-	uuid := c.GetHeader("User-Token")
-	if len(uuid) != 36 {
-		return
-	}
-	x, err := ReadRedis("usermanager/legal/" + MD5Worker.Hash([]byte(uuid)))
-	if err != nil {
-		return
-	}
-	// 更新redis的对应键值的有效期
-	if gjson.Parse(x).Get("source").String() != "local" {
-		ExpireUserToken(uuid)
+func RenewToken() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		uuid := c.GetHeader("User-Token")
+		if len(uuid) != 36 {
+			return
+		}
+		x, err := ReadRedis("usermanager/legal/" + MD5Worker.Hash([]byte(uuid)))
+		if err != nil {
+			return
+		}
+		// 更新redis的对应键值的有效期
+		if gjson.Parse(x).Get("source").String() != "local" {
+			ExpireUserToken(uuid)
+		}
 	}
 }
 
