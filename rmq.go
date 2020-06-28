@@ -62,6 +62,8 @@ func (conf *rabbitConfigure) show() string {
 	conf.forshow, _ = sjson.Set(conf.forshow, "pwd", CWorker.Encrypt(rabbitConf.pwd))
 	conf.forshow, _ = sjson.Set(conf.forshow, "vhost", rabbitConf.vhost)
 	conf.forshow, _ = sjson.Set(conf.forshow, "exchange", rabbitConf.exchange)
+	conf.forshow, _ = sjson.Set(conf.forshow, "use_tls", rabbitConf.usetls)
+	conf.forshow, _ = sjson.Set(conf.forshow, "root_path", rootPath)
 	return conf.forshow
 }
 

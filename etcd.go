@@ -32,7 +32,8 @@ type etcdConfigure struct {
 
 func (conf *etcdConfigure) show() string {
 	conf.forshow, _ = sjson.Set("", "addr", etcdConf.addr)
-	conf.forshow, _ = sjson.Set(conf.forshow, "root", etcdConf.root)
+	conf.forshow, _ = sjson.Set(conf.forshow, "use_tls", etcdConf.usetls)
+	conf.forshow, _ = sjson.Set(conf.forshow, "root_path", rootPath)
 	return conf.forshow
 }
 

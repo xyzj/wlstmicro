@@ -36,6 +36,7 @@ func (conf *redisConfigure) show() string {
 	conf.forshow, _ = sjson.Set("", "addr", redisConf.addr)
 	conf.forshow, _ = sjson.Set(conf.forshow, "pwd", CWorker.Encrypt(redisConf.pwd))
 	conf.forshow, _ = sjson.Set(conf.forshow, "dbname", redisConf.database)
+	conf.forshow, _ = sjson.Set(conf.forshow, "root_path", rootPath)
 	return conf.forshow
 }
 
