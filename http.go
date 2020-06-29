@@ -185,7 +185,7 @@ func PrepareToken(forceAbort ...bool) gin.HandlerFunc {
 			EraseRedis(tokenPath)
 			return
 		}
-		if ans.Get("expire").Int() < time.Now().Unix() { // 用户过期
+		if ans.Get("expire").Int() > 0 && ans.Get("expire").Int() < time.Now().Unix() { // 用户过期
 			c.Params = append(c.Params, gin.Param{
 				Key:   "_prepareError",
 				Value: "Account has expired",
