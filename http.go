@@ -14,6 +14,8 @@ import (
 	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/render"
+	swagfile "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 	"github.com/tidwall/gjson"
 	"github.com/xyzj/gopsu"
 	ginmiddleware "github.com/xyzj/gopsu/gin-middleware"
@@ -89,6 +91,8 @@ func NewHTTPService(r *gin.Engine) {
 			render.WriteString(c.Writer, sss, nil)
 		})
 	}
+
+	r.GET("/docs/*any", ginSwagger.WrapHandler(swagfile.Handler))
 	go func() {
 		var err error
 		if *Debug || *forceHTTP {
@@ -153,7 +157,7 @@ func PrepareToken(forceAbort ...bool) gin.HandlerFunc {
 			if shouldAbort {
 				c.Set("status", 0)
 				c.Set("detail", "User-Token illegal")
-				c.AbortWithStatusJSON(401, c.Keys)
+				c.AbortWithStatusJSON(http.StatusUnauthorized, c.Keys)
 			}
 			return
 		}
@@ -167,7 +171,7 @@ func PrepareToken(forceAbort ...bool) gin.HandlerFunc {
 			if shouldAbort {
 				c.Set("status", 0)
 				c.Set("detail", "User-Token not found")
-				c.AbortWithStatusJSON(200, c.Keys)
+				c.AbortWithStatusJSON(http.StatusUnauthorized, c.Keys)
 			}
 			return
 		}
@@ -180,7 +184,7 @@ func PrepareToken(forceAbort ...bool) gin.HandlerFunc {
 			if shouldAbort {
 				c.Set("status", 0)
 				c.Set("detail", "User-Token can not understand")
-				c.AbortWithStatusJSON(200, c.Keys)
+				c.AbortWithStatusJSON(http.StatusUnauthorized, c.Keys)
 			}
 			EraseRedis(tokenPath)
 			return
@@ -193,7 +197,7 @@ func PrepareToken(forceAbort ...bool) gin.HandlerFunc {
 			if shouldAbort {
 				c.Set("status", 0)
 				c.Set("detail", "Account has expired")
-				c.AbortWithStatusJSON(200, c.Keys)
+				c.AbortWithStatusJSON(http.StatusUnauthorized, c.Keys)
 			}
 			EraseRedis(tokenPath)
 			return
@@ -262,7 +266,7 @@ func CheckToken() gin.HandlerFunc {
 			c.Set("status", 0)
 			c.Set("detail", "User-Token illegal")
 			c.Set("xfile", 11)
-			c.AbortWithStatusJSON(401, c.Keys)
+			c.AbortWithStatusJSON(http.StatusUnauthorized, c.Keys)
 		}
 	}
 }
