@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -19,7 +20,30 @@ import (
 	"github.com/tidwall/gjson"
 	"github.com/xyzj/gopsu"
 	ginmiddleware "github.com/xyzj/gopsu/gin-middleware"
+	yaag_gin "github.com/xyzj/yaag/gin"
+	"github.com/xyzj/yaag/yaag"
 )
+
+var (
+	apidocPath = "docs/apidoc.html"
+	yaagConfig *yaag.Config
+)
+
+func apidoc(c *gin.Context) {
+	switch c.Param("switch") {
+	case "on":
+		yaagConfig.On = true
+		c.String(200, "api record is set to on.")
+	case "off":
+		yaagConfig.On = false
+		c.String(200, "api record is set to off.")
+	case "reset":
+		yaagConfig.ResetDoc()
+		c.String(200, "api record reset done.")
+	default:
+		c.String(200, "what do you turly desire?")
+	}
+}
 
 // NewHTTPEngine 创建gin引擎
 func NewHTTPEngine(f ...gin.HandlerFunc) *gin.Engine {
@@ -37,6 +61,7 @@ func NewHTTPEngine(f ...gin.HandlerFunc) *gin.Engine {
 		AllowMethods:     []string{"*"},
 		AllowHeaders:     []string{"*"},
 	}))
+
 	// 数据压缩
 	r.Use(gingzip.Gzip(9))
 	// 日志
@@ -66,7 +91,32 @@ func NewHTTPEngine(f ...gin.HandlerFunc) *gin.Engine {
 	r.GET("/clearlog", ginmiddleware.CheckRequired("name"), ginmiddleware.Clearlog)
 	r.GET("/runtime", ginmiddleware.PageRuntime)
 	r.Static("/static", filepath.Join(gopsu.GetExecDir(), "static"))
+	// swagger
+	if *EnableSwagger {
+		r.GET("/api/*any", ginSwagger.WrapHandler(swagfile.Handler))
+	}
+	// apidoc
+	//添加管理路由
+	r.Static("/docs", filepath.Join(gopsu.GetExecDir(), "docs"))
+	r.GET("/apirecord/:switch", apidoc)
+	// 生成api访问文档
+	apidocPath = filepath.Join(gopsu.GetExecDir(), "docs", "apidoc-"+serverName+".html")
+	os.MkdirAll(apidocPath, 0755)
+	yaagConfig = &yaag.Config{
+		On:       true,
+		DocTitle: "Gin Web Framework API Document",
+		DocPath:  apidocPath,
+		BaseUrls: map[string]string{
+			"Server Name": serverName,
+			"Core Author": "X.Yuan",
+			"Last Update": time.Now().Format(gopsu.LongTimeFormat),
+		},
+	}
+	yaag.Init(yaagConfig)
+	r.Use(yaag_gin.Document())
+
 	if *Debug {
+		// 调试
 		pprof.Register(r)
 	}
 	return r
@@ -92,7 +142,6 @@ func NewHTTPService(r *gin.Engine) {
 		})
 	}
 
-	r.GET("/docs/*any", ginSwagger.WrapHandler(swagfile.Handler))
 	go func() {
 		var err error
 		if *Debug || *forceHTTP {

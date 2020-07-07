@@ -39,6 +39,7 @@ func (conf *etcdConfigure) show() string {
 
 // NewETCDClient NewETCDClient
 func NewETCDClient(svrName, svrType, svrProtocol string) bool {
+	serverName = svrName
 	if AppConf == nil {
 		WriteError("SYS", "Configuration files should be loaded first")
 		return false

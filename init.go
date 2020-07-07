@@ -56,6 +56,7 @@ var (
 	// 日志标识
 	loggerMark  string
 	VersionInfo string
+	serverName  string
 )
 
 // 启动参数
@@ -70,6 +71,8 @@ var (
 	logDays = flag.Int("logdays", 15, "set the max days of the log files to keep")
 	// WebPort 主端口
 	WebPort = flag.Int("http", 6819, "set http port to listen on.")
+	// EnableSwagger 启用swagger支持，需要在main.go中引入`_ "./docs"`
+	EnableSwagger = flag.Bool("swagger", false, "enable swagger support, make sure your program import the ./docs folder")
 	// 配置文件
 	conf = flag.String("conf", "", "set the config file path.")
 	// 版本信息
@@ -313,9 +316,10 @@ func RunFramework(om *OptionFramework) {
 	}
 	if om.UseMQConsumer != nil {
 		if om.UseMQConsumer.Activation {
-			NewMQConsumer(om.UseMQConsumer.QueueName)
-			BindRabbitMQ(om.UseMQConsumer.BindKeys...)
-			go RecvRabbitMQ(om.UseMQConsumer.RecvFunc)
+			if NewMQConsumer(om.UseMQConsumer.QueueName) {
+				BindRabbitMQ(om.UseMQConsumer.BindKeys...)
+				go RecvRabbitMQ(om.UseMQConsumer.RecvFunc)
+			}
 		}
 	}
 	if om.UseSQL != nil {
