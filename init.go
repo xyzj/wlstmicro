@@ -72,7 +72,7 @@ var (
 	// WebPort 主端口
 	WebPort = flag.Int("http", 6819, "set http port to listen on.")
 	// EnableSwagger 启用swagger支持，需要在main.go中引入`_ "./docs"`
-	EnableSwagger = flag.Bool("swagger", false, "enable swagger support, make sure your program import the ./docs folder")
+	// EnableSwagger = flag.Bool("swagger", false, "enable swagger support, make sure your program import the ./docs folder")
 	// 配置文件
 	conf = flag.String("conf", "", "set the config file path.")
 	// 版本信息

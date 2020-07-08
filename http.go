@@ -15,8 +15,9 @@ import (
 	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/render"
-	swagfile "github.com/swaggo/files"
-	ginSwagger "github.com/swaggo/gin-swagger"
+
+	// swagfile "github.com/swaggo/files"
+	// ginSwagger "github.com/swaggo/gin-swagger"
 	"github.com/tidwall/gjson"
 	"github.com/xyzj/gopsu"
 	ginmiddleware "github.com/xyzj/gopsu/gin-middleware"
@@ -92,9 +93,9 @@ func NewHTTPEngine(f ...gin.HandlerFunc) *gin.Engine {
 	r.GET("/runtime", ginmiddleware.PageRuntime)
 	r.Static("/static", filepath.Join(gopsu.GetExecDir(), "static"))
 	// swagger
-	if *EnableSwagger {
-		r.GET("/api/*any", ginSwagger.WrapHandler(swagfile.Handler))
-	}
+	// if *EnableSwagger {
+	// 	r.GET("/api/*any", ginSwagger.WrapHandler(swagfile.Handler))
+	// }
 	// apidoc
 	//添加管理路由
 	r.Static("/docs", filepath.Join(gopsu.GetExecDir(), "docs"))
