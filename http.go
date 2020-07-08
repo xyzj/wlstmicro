@@ -57,7 +57,7 @@ func serverAPI(c *gin.Context) {
 	if svrname == "" {
 		svrname = serverName
 	}
-	p := filepath.Join(gopsu.GetExecDir(), "docs", svrname+".html")
+	p := filepath.Join(gopsu.GetExecDir(), "docs", "apidoc-"+svrname+".html")
 	if gopsu.IsExist(p) {
 		b, _ := ioutil.ReadFile(p)
 		c.Header("Content-Type", "text/html")
