@@ -3,6 +3,7 @@ package wlstmicro
 import (
 	"bytes"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -15,9 +16,6 @@ import (
 	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/render"
-
-	// swagfile "github.com/swaggo/files"
-	// ginSwagger "github.com/swaggo/gin-swagger"
 	"github.com/tidwall/gjson"
 	"github.com/xyzj/gopsu"
 	ginmiddleware "github.com/xyzj/gopsu/gin-middleware"
@@ -34,16 +32,41 @@ func apidoc(c *gin.Context) {
 	switch c.Param("switch") {
 	case "on":
 		yaagConfig.On = true
-		c.String(200, "api record is set to on.")
+		c.String(200, "API record is set to on.")
 	case "off":
 		yaagConfig.On = false
-		c.String(200, "api record is set to off.")
+		c.String(200, "API record is set to off.")
 	case "reset":
 		yaagConfig.ResetDoc()
-		c.String(200, "api record reset done.")
+		c.String(200, "API record reset done.")
 	default:
-		c.String(200, "what do you turly desire?")
+		p := filepath.Join(gopsu.GetExecDir(), "docs", "apidoc-"+c.Param("switch")+".html")
+		if gopsu.IsExist(p) {
+			b, _ := ioutil.ReadFile(p)
+			c.Header("Content-Type", "text/html")
+			c.Status(http.StatusOK)
+			c.Writer.Write(b)
+		} else {
+			c.String(200, "The API record file was not found, you may not have the API record function turned on.")
+		}
 	}
+}
+
+func serverAPI(c *gin.Context) {
+	var svrname = c.Param("switch")
+	if svrname == "" {
+		svrname = serverName
+	}
+	p := filepath.Join(gopsu.GetExecDir(), "docs", svrname+".html")
+	if gopsu.IsExist(p) {
+		b, _ := ioutil.ReadFile(p)
+		c.Header("Content-Type", "text/html")
+		c.Status(http.StatusOK)
+		c.Writer.Write(b)
+	} else {
+		ginmiddleware.Page404(c)
+	}
+
 }
 
 // NewHTTPEngine 创建gin引擎
@@ -92,20 +115,16 @@ func NewHTTPEngine(f ...gin.HandlerFunc) *gin.Engine {
 	r.GET("/clearlog", ginmiddleware.CheckRequired("name"), ginmiddleware.Clearlog)
 	r.GET("/runtime", ginmiddleware.PageRuntime)
 	r.Static("/static", filepath.Join(gopsu.GetExecDir(), "static"))
-	// swagger
-	// if *EnableSwagger {
-	// 	r.GET("/api/*any", ginSwagger.WrapHandler(swagfile.Handler))
-	// }
 	// apidoc
-	//添加管理路由
-	r.Static("/docs", filepath.Join(gopsu.GetExecDir(), "docs"))
+	r.GET("/api/:switch", serverAPI)
+	// apirecord
 	r.GET("/apirecord/:switch", apidoc)
 	// 生成api访问文档
-	apidocPath = filepath.Join(gopsu.GetExecDir(), "docs", "apidoc-"+serverName+".html")
+	apidocPath = filepath.Join(gopsu.GetExecDir(), "docs", "apirecord-"+serverName+".html")
 	os.MkdirAll(filepath.Join(gopsu.GetExecDir(), "docs"), 0755)
 	yaagConfig = &yaag.Config{
 		On:       true,
-		DocTitle: "Gin Web Framework API Document",
+		DocTitle: "Gin Web Framework API Record",
 		DocPath:  apidocPath,
 		BaseUrls: map[string]string{
 			"Server Name": serverName,
