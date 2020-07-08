@@ -101,7 +101,7 @@ func NewHTTPEngine(f ...gin.HandlerFunc) *gin.Engine {
 	r.GET("/apirecord/:switch", apidoc)
 	// 生成api访问文档
 	apidocPath = filepath.Join(gopsu.GetExecDir(), "docs", "apidoc-"+serverName+".html")
-	os.MkdirAll(apidocPath, 0755)
+	os.MkdirAll(filepath.Join(gopsu.GetExecDir(), "docs"), 0755)
 	yaagConfig = &yaag.Config{
 		On:       true,
 		DocTitle: "Gin Web Framework API Document",
