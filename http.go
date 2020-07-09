@@ -123,7 +123,7 @@ func NewHTTPEngine(f ...gin.HandlerFunc) *gin.Engine {
 	apidocPath = filepath.Join(gopsu.GetExecDir(), "docs", "apirecord-"+serverName+".html")
 	os.MkdirAll(filepath.Join(gopsu.GetExecDir(), "docs"), 0755)
 	yaagConfig = &yaag.Config{
-		On:       true,
+		On:       false,
 		DocTitle: "Gin Web Framework API Record",
 		DocPath:  apidocPath,
 		BaseUrls: map[string]string{
