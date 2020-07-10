@@ -40,7 +40,7 @@ func apidoc(c *gin.Context) {
 		yaagConfig.ResetDoc()
 		c.String(200, "API record reset done.")
 	default:
-		p := filepath.Join(gopsu.GetExecDir(), "docs", "apidoc-"+c.Param("switch")+".html")
+		p := filepath.Join(gopsu.GetExecDir(), "docs", "apirecord-"+c.Param("switch")+".html")
 		if gopsu.IsExist(p) {
 			b, _ := ioutil.ReadFile(p)
 			c.Header("Content-Type", "text/html")
