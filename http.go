@@ -19,13 +19,14 @@ import (
 	"github.com/tidwall/gjson"
 	"github.com/xyzj/gopsu"
 	ginmiddleware "github.com/xyzj/gopsu/gin-middleware"
-	yaag_gin "github.com/xyzj/yaag/gin"
+	yaaggin "github.com/xyzj/yaag/gin"
 	"github.com/xyzj/yaag/yaag"
 )
 
 var (
 	apidocPath = "docs/apidoc.html"
 	yaagConfig *yaag.Config
+	yaagEnable bool
 )
 
 func apidoc(c *gin.Context) {
@@ -117,24 +118,25 @@ func NewHTTPEngine(f ...gin.HandlerFunc) *gin.Engine {
 	r.Static("/static", filepath.Join(gopsu.GetExecDir(), "static"))
 	// apidoc
 	r.GET("/api/:switch", serverAPI)
-	// apirecord
-	r.GET("/apirecord/:switch", apidoc)
-	// 生成api访问文档
-	apidocPath = filepath.Join(gopsu.GetExecDir(), "docs", "apirecord-"+serverName+".html")
-	os.MkdirAll(filepath.Join(gopsu.GetExecDir(), "docs"), 0755)
-	yaagConfig = &yaag.Config{
-		On:       false,
-		DocTitle: "Gin Web Framework API Record",
-		DocPath:  apidocPath,
-		BaseUrls: map[string]string{
-			"Server Name": serverName,
-			"Core Author": "X.Yuan",
-			"Last Update": time.Now().Format(gopsu.LongTimeFormat),
-		},
+	if yaagEnable {
+		// apirecord
+		r.GET("/apirecord/:switch", apidoc)
+		// 生成api访问文档
+		apidocPath = filepath.Join(gopsu.GetExecDir(), "docs", "apirecord-"+serverName+".html")
+		os.MkdirAll(filepath.Join(gopsu.GetExecDir(), "docs"), 0755)
+		yaagConfig = &yaag.Config{
+			On:       false,
+			DocTitle: "Gin Web Framework API Record",
+			DocPath:  apidocPath,
+			BaseUrls: map[string]string{
+				"Server Name": serverName,
+				"Core Author": "X.Yuan",
+				"Last Update": time.Now().Format(gopsu.LongTimeFormat),
+			},
+		}
+		yaag.Init(yaagConfig)
+		r.Use(yaaggin.Document())
 	}
-	yaag.Init(yaagConfig)
-	r.Use(yaag_gin.Document())
-
 	if *Debug {
 		// 调试
 		pprof.Register(r)

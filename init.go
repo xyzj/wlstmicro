@@ -195,6 +195,8 @@ type OptionHTTP struct {
 	EngineFunc func() *gin.Engine
 	// 启用
 	Activation bool
+	// 启用apirecord功能
+	RecordAPI bool
 }
 
 // ExpandFunc 扩展带参数方法
@@ -334,6 +336,7 @@ func RunFramework(om *OptionFramework) {
 	}
 	if om.UseHTTP != nil {
 		if om.UseHTTP.Activation {
+			yaagEnable = om.UseHTTP.RecordAPI
 			if om.UseHTTP.EngineFunc != nil {
 				om.UseHTTP.GinEngine = om.UseHTTP.EngineFunc()
 			} else {
