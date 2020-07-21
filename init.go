@@ -208,6 +208,7 @@ type ExpandFunc struct {
 // OptionFramework go语言微服务框架
 type OptionFramework struct {
 	LoggerMark string
+	Version    string
 	// 启用ETCD模块
 	UseETCD *OptionETCD
 	// 启用SQL模块
@@ -259,6 +260,14 @@ func getFlagReady() {
 
 // RunFramework 初始化框架相关参数
 func RunFramework(om *OptionFramework) {
+	// 保存版本信息
+	if om.Version != "" {
+		VersionInfo = om.Version
+		p, _ := os.Executable()
+		f, _ := os.OpenFile(fmt.Sprintf("%s.ver", p), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0444)
+		defer f.Close()
+		f.WriteString(VersionInfo + "\r\n")
+	}
 	getFlagReady()
 	if om.FrontFunc != nil {
 		om.FrontFunc()
@@ -267,13 +276,6 @@ func RunFramework(om *OptionFramework) {
 		loggerMark = fmt.Sprint(*WebPort)
 	} else {
 		loggerMark = om.LoggerMark
-	}
-	// 保存版本信息
-	if VersionInfo != "" {
-		p, _ := os.Executable()
-		f, _ := os.OpenFile(fmt.Sprintf("%s.ver", p), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0444)
-		defer f.Close()
-		f.WriteString(VersionInfo + "\r\n")
 	}
 	if *Debug {
 		*logLevel = 10
@@ -304,6 +306,22 @@ func RunFramework(om *OptionFramework) {
 			NewETCDClient(om.UseETCD.SvrName, om.UseETCD.SvrType, om.UseETCD.SvrProtocol)
 		}
 	}
+	if om.UseHTTP != nil {
+		if om.UseHTTP.Activation {
+			yaagEnable = om.UseHTTP.RecordAPI
+			if om.UseHTTP.EngineFunc != nil {
+				om.UseHTTP.GinEngine = om.UseHTTP.EngineFunc()
+			} else {
+				if om.UseHTTP.GinEngine == nil {
+					om.UseHTTP.GinEngine = NewHTTPEngine()
+				}
+			}
+			NewHTTPService(om.UseHTTP.GinEngine)
+			if VersionInfo != "" {
+				ginmiddleware.SetVersionInfo(VersionInfo)
+			}
+		}
+	}
 	if om.UseRedis != nil {
 		if om.UseRedis.Activation {
 			NewRedisClient()
@@ -331,22 +349,6 @@ func RunFramework(om *OptionFramework) {
 				if om.UseSQL.DoMERGE {
 					go MaintainMrgTables()
 				}
-			}
-		}
-	}
-	if om.UseHTTP != nil {
-		if om.UseHTTP.Activation {
-			yaagEnable = om.UseHTTP.RecordAPI
-			if om.UseHTTP.EngineFunc != nil {
-				om.UseHTTP.GinEngine = om.UseHTTP.EngineFunc()
-			} else {
-				if om.UseHTTP.GinEngine == nil {
-					om.UseHTTP.GinEngine = NewHTTPEngine()
-				}
-			}
-			NewHTTPService(om.UseHTTP.GinEngine)
-			if VersionInfo != "" {
-				ginmiddleware.SetVersionInfo(VersionInfo)
 			}
 		}
 	}
