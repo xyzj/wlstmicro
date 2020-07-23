@@ -63,7 +63,7 @@ func NewMysqlClient(mark string) bool {
 	dbConf.addr = AppConf.GetItemDefault("db_addr", "127.0.0.1:3306", "sql服务地址,ip[:port[/instance]]格式")
 	dbConf.user = AppConf.GetItemDefault("db_user", "root", "sql用户名")
 	dbConf.pwd = gopsu.DecodeString(AppConf.GetItemDefault("db_pwd", "SsWAbSy8H1EOP3n5LdUQqls", "sql密码"))
-	dbConf.database = AppConf.GetItemDefault("db_name", "mydb1024", "sql数据库名称")
+	dbConf.database = AppConf.GetItemDefault("db_name", "", "sql数据库名称")
 	dbConf.driver = AppConf.GetItemDefault("db_drive", "mysql", "sql数据库驱动，mysql 或 mssql")
 	dbConf.mrgTables = strings.Split(AppConf.GetItemDefault("db_mrg_tables", "", "使用mrg_myisam引擎分表的总表名称，用`,`分割多个总表"), ",")
 	dbConf.mrgMaxSubTables = gopsu.String2Int(AppConf.GetItemDefault("db_mrg_maxsubtables", "10", "分表子表数量，最小为1"), 10)
@@ -85,7 +85,6 @@ func NewMysqlClient(mark string) bool {
 		DataBase:    dbConf.database,
 		EnableCache: true,
 		CacheDir:    gopsu.DefaultCacheDir,
-		CacheHead:   "gc" + mark,
 		Timeout:     120,
 		Logger: &StdLogger{
 			Name: "SQL",

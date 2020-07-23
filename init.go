@@ -273,7 +273,11 @@ func RunFramework(om *OptionFramework) {
 		om.FrontFunc()
 	}
 	if om.LoggerMark == "" {
-		loggerMark = fmt.Sprint(*WebPort)
+		if om.UseETCD == nil {
+			loggerMark = fmt.Sprintf("X-%05d", *WebPort)
+		} else {
+			loggerMark = fmt.Sprintf("%s-%05d", om.UseETCD.SvrName, *WebPort)
+		}
 	} else {
 		loggerMark = om.LoggerMark
 	}
@@ -286,7 +290,7 @@ func RunFramework(om *OptionFramework) {
 	case 0:
 		microLog = &gopsu.StdLogger{}
 	default:
-		microLog = gopsu.NewLogger(gopsu.DefaultLogDir, "X"+loggerMark+".core", *logLevel, *logDays)
+		microLog = gopsu.NewLogger(gopsu.DefaultLogDir, loggerMark+".core", *logLevel, *logDays)
 	}
 	// 载入配置
 	LoadConfigure()
