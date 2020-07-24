@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -41,7 +40,7 @@ func apidoc(c *gin.Context) {
 		yaagConfig.ResetDoc()
 		c.String(200, "API record reset done.")
 	default:
-		p := filepath.Join(gopsu.GetExecDir(), "docs", "apirecord-"+c.Param("switch")+".html")
+		p := gopsu.JoinPathFromHere("docs", "apirecord-"+c.Param("switch")+".html")
 		if gopsu.IsExist(p) {
 			b, _ := ioutil.ReadFile(p)
 			c.Header("Content-Type", "text/html")
@@ -58,7 +57,7 @@ func serverAPI(c *gin.Context) {
 	if svrname == "" {
 		svrname = serverName
 	}
-	p := filepath.Join(gopsu.GetExecDir(), "docs", "apidoc-"+svrname+".html")
+	p := gopsu.JoinPathFromHere("docs", "apidoc-"+svrname+".html")
 	if gopsu.IsExist(p) {
 		b, _ := ioutil.ReadFile(p)
 		c.Header("Content-Type", "text/html")
@@ -115,15 +114,16 @@ func NewHTTPEngine(f ...gin.HandlerFunc) *gin.Engine {
 	r.GET("/health", ginmiddleware.PageDefault)
 	r.GET("/clearlog", ginmiddleware.CheckRequired("name"), ginmiddleware.Clearlog)
 	r.GET("/runtime", ginmiddleware.PageRuntime)
-	r.Static("/static", filepath.Join(gopsu.GetExecDir(), "static"))
+	r.POST("/runtime", ginmiddleware.PageRuntime)
+	r.Static("/static", gopsu.JoinPathFromHere("static"))
 	// apidoc
 	r.GET("/api/:switch", serverAPI)
 	if yaagEnable {
 		// apirecord
 		r.GET("/apirecord/:switch", apidoc)
 		// 生成api访问文档
-		apidocPath = filepath.Join(gopsu.GetExecDir(), "docs", "apirecord-"+serverName+".html")
-		os.MkdirAll(filepath.Join(gopsu.GetExecDir(), "docs"), 0755)
+		apidocPath = gopsu.JoinPathFromHere("docs", "apirecord-"+serverName+".html")
+		os.MkdirAll(gopsu.JoinPathFromHere("docs"), 0755)
 		yaagConfig = &yaag.Config{
 			On:       false,
 			DocTitle: "Gin Web Framework API Record",
