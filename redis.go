@@ -97,7 +97,7 @@ func ExpireRedis(key string, expire time.Duration) error {
 		WriteError("REDIS", "Failed update redis expire: "+key+"|"+err.Error())
 		return err
 	}
-	WriteInfo("REDIS", "Expire redis key: "+key)
+	WriteDebug("REDIS", "Expire redis key: "+key)
 	return nil
 }
 

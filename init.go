@@ -559,7 +559,7 @@ func WriteSystem(name, msg string) {
 // msg： 日志信息
 // level： 日志级别10,20，30,40,90
 func WriteLog(name, msg string, level int) {
-	if level == -1 {
+	if level == -1 || level < *logLevel {
 		return
 	}
 	if name != "" {

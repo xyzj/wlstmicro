@@ -179,7 +179,11 @@ RECV:
 			return
 		}
 		for d := range rcvMQ {
-			WriteDebug("MQ", "Debug-R:"+rabbitConf.addr+"|"+d.RoutingKey+"|"+base64.StdEncoding.EncodeToString(d.Body))
+			if gjson.ValidBytes(d.Body) {
+				WriteDebug("MQ", "Debug-R:"+rabbitConf.addr+"|"+d.RoutingKey+"|"+string(d.Body))
+			} else {
+				WriteDebug("MQ", "Debug-R:"+rabbitConf.addr+"|"+d.RoutingKey+"|"+base64.StdEncoding.EncodeToString(d.Body))
+			}
 			f(d.RoutingKey, d.Body)
 		}
 	}()
