@@ -310,6 +310,23 @@ func RunFramework(om *OptionFramework) {
 			NewETCDClient(om.UseETCD.SvrName, om.UseETCD.SvrType, om.UseETCD.SvrProtocol)
 		}
 	}
+	if om.UseRedis != nil {
+		if om.UseRedis.Activation {
+			NewRedisClient()
+		}
+	}
+	if om.UseSQL != nil {
+		if om.UseSQL.Activation {
+			if om.UseSQL.CacheMark == "" {
+				om.UseSQL.CacheMark = strconv.FormatInt(int64(*WebPort), 10)
+			}
+			if NewMysqlClient(om.UseSQL.CacheMark) {
+				if om.UseSQL.DoMERGE {
+					go MaintainMrgTables()
+				}
+			}
+		}
+	}
 	if om.UseHTTP != nil {
 		if om.UseHTTP.Activation {
 			yaagEnable = om.UseHTTP.RecordAPI
@@ -326,11 +343,6 @@ func RunFramework(om *OptionFramework) {
 			}
 		}
 	}
-	if om.UseRedis != nil {
-		if om.UseRedis.Activation {
-			NewRedisClient()
-		}
-	}
 	if om.UseMQProducer != nil {
 		if om.UseMQProducer.Activation {
 			NewMQProducer()
@@ -341,18 +353,6 @@ func RunFramework(om *OptionFramework) {
 			if NewMQConsumer(om.UseMQConsumer.QueueName) {
 				BindRabbitMQ(om.UseMQConsumer.BindKeys...)
 				go RecvRabbitMQ(om.UseMQConsumer.RecvFunc)
-			}
-		}
-	}
-	if om.UseSQL != nil {
-		if om.UseSQL.Activation {
-			if om.UseSQL.CacheMark == "" {
-				om.UseSQL.CacheMark = strconv.FormatInt(int64(*WebPort), 10)
-			}
-			if NewMysqlClient(om.UseSQL.CacheMark) {
-				if om.UseSQL.DoMERGE {
-					go MaintainMrgTables()
-				}
 			}
 		}
 	}
