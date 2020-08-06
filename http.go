@@ -117,7 +117,7 @@ func NewHTTPEngine(f ...gin.HandlerFunc) *gin.Engine {
 	r.POST("/runtime", ginmiddleware.PageRuntime)
 	r.Static("/static", gopsu.JoinPathFromHere("static"))
 	// apidoc
-	r.GET("/api/:switch", serverAPI)
+	// r.GET("/api/:switch", serverAPI)
 	if yaagEnable {
 		// apirecord
 		r.GET("/apirecord/:switch", apidoc)
