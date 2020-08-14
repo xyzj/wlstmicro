@@ -57,6 +57,8 @@ var (
 	loggerMark  string
 	VersionInfo string
 	serverName  string
+	// http服务的协议，http or https
+	HTTPProtocol string
 )
 
 // 启动参数
@@ -565,6 +567,7 @@ func WriteLog(name, msg string, level int) {
 	if name != "" {
 		name = "[" + name + "] "
 	}
+	msg = gopsu.TrimString(msg)
 	switch level {
 	case 10:
 		microLog.Debug(fmt.Sprintf("%s%s", name, msg))

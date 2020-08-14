@@ -167,8 +167,10 @@ func NewHTTPService(r *gin.Engine) {
 	go func() {
 		var err error
 		if *Debug || *forceHTTP {
+			HTTPProtocol = "http://"
 			err = ginmiddleware.ListenAndServe(*WebPort, r)
 		} else {
+			HTTPProtocol = "https://"
 			err = ginmiddleware.ListenAndServeTLS(*WebPort, r, HTTPTLS.Cert, HTTPTLS.Key, HTTPTLS.ClientCA)
 		}
 		if err != nil {
@@ -189,7 +191,7 @@ func DoRequest(req *http.Request, logdetail ...string) (int, []byte, map[string]
 		}
 	}
 
-	WriteLog("HTTP", fmt.Sprintf("%s request to %s|%s", req.Method, req.URL.String(), strings.Join(logdetail, ",")), level)
+	// WriteLog("HTTP", fmt.Sprintf("%s request to %s|%s", req.Method, req.URL.String(), strings.Join(logdetail, ",")), 10)
 	resp, err := HTTPClient.Do(req)
 	if err != nil {
 		WriteError("HTTP", "request error: "+err.Error())
@@ -326,18 +328,6 @@ func RenewToken() gin.HandlerFunc {
 		// 更新redis的对应键值的有效期
 		if gjson.Parse(x).Get("source").String() != "local" {
 			ExpireUserToken(uuid)
-		}
-	}
-}
-
-// CheckToken 通过uuid获取用户信息
-func CheckToken() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		if c.Param("_userTokenPath") == "" {
-			c.Set("status", 0)
-			c.Set("detail", "User-Token illegal")
-			c.Set("xfile", 11)
-			c.AbortWithStatusJSON(http.StatusUnauthorized, c.Keys)
 		}
 	}
 }
