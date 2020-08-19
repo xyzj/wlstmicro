@@ -73,6 +73,8 @@ var (
 	logDays = flag.Int("logdays", 15, "set the max days of the log files to keep")
 	// WebPort 主端口
 	WebPort = flag.Int("http", 6819, "set http port to listen on.")
+	// portable 把日志，缓存等目录创建在当前目录下，方便打包带走
+	portable = flag.Bool("portable", false, "把日志，配置，缓存目录创建在当前目录下")
 	// 配置文件
 	conf = flag.String("conf", "", "set the config file path.")
 	// 版本信息
@@ -88,7 +90,7 @@ func init() {
 
 	CWorker.SetKey("(NMNle+XW!ykVjf1", "Zq0V+,.2u|3sGAzH")
 	// 创建固定目录
-	gopsu.DefaultConfDir, gopsu.DefaultLogDir, gopsu.DefaultCacheDir = gopsu.MakeRuntimeDirs(".")
+	// gopsu.DefaultConfDir, gopsu.DefaultLogDir, gopsu.DefaultCacheDir = gopsu.MakeRuntimeDirs("..")
 	// 配置默认ca文件路径
 	baseCAPath = filepath.Join(gopsu.DefaultConfDir, "ca")
 	// 检查是否有ca文件指向配置存在,存在则更新路径信息
@@ -270,7 +272,15 @@ func RunFramework(om *OptionFramework) {
 		defer f.Close()
 		f.WriteString(VersionInfo + "\r\n")
 	}
+	// 处置参数
 	getFlagReady()
+	// 处置目录
+	if *portable {
+		gopsu.DefaultConfDir, gopsu.DefaultLogDir, gopsu.DefaultCacheDir = gopsu.MakeRuntimeDirs(".")
+	} else {
+		gopsu.DefaultConfDir, gopsu.DefaultLogDir, gopsu.DefaultCacheDir = gopsu.MakeRuntimeDirs("..")
+	}
+	// 前置处理方法，用于预初始化某些内容
 	if om.FrontFunc != nil {
 		om.FrontFunc()
 	}
