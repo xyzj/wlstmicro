@@ -421,7 +421,7 @@ func LoadConfigure() {
 	// 最大idle连接保持数量
 	var trMaxidle = 0
 	// 每个host允许的最大连接数
-	var trMaxconnPerHost = 10
+	var trMaxconnPerHost = 500
 	s, err := AppConf.GetItem("tr_timeo")
 	if err == nil {
 		if gopsu.String2Int(s, 10) > 2 {
