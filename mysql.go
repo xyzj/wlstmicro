@@ -79,13 +79,14 @@ func NewMysqlClient(mark string) bool {
 		return false
 	}
 	MysqlClient = &db.SQLPool{
-		User:        dbConf.user,
-		Server:      dbConf.addr,
-		Passwd:      dbConf.pwd,
-		DataBase:    dbConf.database,
-		EnableCache: true,
-		CacheDir:    gopsu.DefaultCacheDir,
-		Timeout:     120,
+		User:         dbConf.user,
+		Server:       dbConf.addr,
+		Passwd:       dbConf.pwd,
+		DataBase:     dbConf.database,
+		EnableCache:  true,
+		MaxOpenConns: 200,
+		CacheDir:     gopsu.DefaultCacheDir,
+		Timeout:      120,
 		Logger: &StdLogger{
 			Name: "SQL",
 		},
