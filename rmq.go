@@ -117,7 +117,7 @@ func NewMQConsumer(svrName string) bool {
 	rabbitConf.pwd = gopsu.DecodeString(AppConf.GetItemDefault("mq_pwd", "WcELCNqP5dCpvMmMbKDdvgb", "mq连接密码"))
 	rabbitConf.vhost = AppConf.GetItemDefault("mq_vhost", "", "mq虚拟域名")
 	rabbitConf.exchange = AppConf.GetItemDefault("mq_exchange", "luwak_topic", "mq交换机名称")
-	rabbitConf.queueRandom, _ = strconv.ParseBool(AppConf.GetItemDefault("mq_queue_random", "false", "随机队列名，true-用于独占模式，false-负载均衡（默认）"))
+	rabbitConf.queueRandom, _ = strconv.ParseBool(AppConf.GetItemDefault("mq_queue_random", "false", "随机队列名，true-用于独占模式，false-负载均衡"))
 	rabbitConf.durable, _ = strconv.ParseBool(AppConf.GetItemDefault("mq_durable", "false", "队列是否持久化"))
 	rabbitConf.autodel, _ = strconv.ParseBool(AppConf.GetItemDefault("mq_autodel", "true", "队列在未使用时是否删除"))
 	rabbitConf.enable, _ = strconv.ParseBool(AppConf.GetItemDefault("mq_enable", "true", "是否启用rabbitmq"))

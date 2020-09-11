@@ -201,6 +201,8 @@ type OptionHTTP struct {
 	Activation bool
 	// 启用apirecord功能
 	RecordAPI bool
+	// 独占队列
+	RandomName bool
 }
 
 // ExpandFunc 扩展带参数方法
@@ -280,6 +282,8 @@ func RunFramework(om *OptionFramework) {
 	} else {
 		gopsu.DefaultConfDir, gopsu.DefaultLogDir, gopsu.DefaultCacheDir = gopsu.MakeRuntimeDirs("..")
 	}
+	// 载入配置
+	LoadConfigure()
 	// 前置处理方法，用于预初始化某些内容
 	if om.FrontFunc != nil {
 		om.FrontFunc()
@@ -304,8 +308,6 @@ func RunFramework(om *OptionFramework) {
 	default:
 		microLog = gopsu.NewLogger(gopsu.DefaultLogDir, loggerMark+".core", *logLevel, *logDays)
 	}
-	// 载入配置
-	LoadConfigure()
 	// 逐步启动服务
 	if om.UseETCD != nil {
 		if om.UseETCD.Activation {
