@@ -9,12 +9,14 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gogo/protobuf/proto"
 	"github.com/pkg/errors"
 	"github.com/streadway/amqp"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
 	"github.com/xyzj/gopsu"
 	"github.com/xyzj/gopsu/mq"
+	v6 "gitlab.local/dp/v6"
 )
 
 var (
@@ -162,7 +164,7 @@ func NewMQConsumer(svrName string) bool {
 
 // RecvRabbitMQ 接收消息
 // f: 消息处理方法，key为消息过滤器，body为消息体
-func RecvRabbitMQ(f func(key string, body []byte)) {
+func RecvRabbitMQ(f func(key string, body []byte), msgproto ...proto.Message) {
 	var mqRecvWaitLock sync.WaitGroup
 RECV:
 	mqRecvWaitLock.Add(1)
@@ -182,7 +184,11 @@ RECV:
 			if gjson.ValidBytes(d.Body) {
 				WriteDebug("MQ", "Debug-R:"+rabbitConf.addr+"|"+d.RoutingKey+"|"+string(d.Body))
 			} else {
-				WriteDebug("MQ", "Debug-R:"+rabbitConf.addr+"|"+d.RoutingKey+"|"+base64.StdEncoding.EncodeToString(d.Body))
+				if msgproto == nil {
+					WriteDebug("MQ", "Debug-R:"+rabbitConf.addr+"|"+d.RoutingKey+"|"+base64.StdEncoding.EncodeToString(d.Body))
+				} else {
+					WriteDebug("MQ", "Debug-R:"+rabbitConf.addr+"|"+d.RoutingKey+"|"+gopsu.PB2String(v6.MsgFromBytes(d.Body, msgproto[0])))
+				}
 			}
 			f(d.RoutingKey, d.Body)
 		}
@@ -250,7 +256,7 @@ func ReadRabbitMQ() (<-chan amqp.Delivery, error) {
 }
 
 // WriteRabbitMQ 写mq
-func WriteRabbitMQ(key string, value []byte, expire time.Duration) {
+func WriteRabbitMQ(key string, value []byte, expire time.Duration, msgproto ...proto.Message) {
 	if !ProducerIsReady() {
 		return
 	}
@@ -265,7 +271,11 @@ func WriteRabbitMQ(key string, value []byte, expire time.Duration) {
 			Body:         value,
 		},
 	})
-	// WriteInfo("MQ", "S:"+key+"|"+mq.FormatMQBody(value))
+	if msgproto != nil {
+		WriteInfo("MQ", "S:"+key+"|"+gopsu.PB2String(v6.MsgFromBytes(value, msgproto[0])))
+	} else {
+		WriteInfo("MQ", "S:"+key+"|"+string(value))
+	}
 }
 
 // PubEvent 事件id，状态，过滤器，用户名，详细，来源ip，额外数据
