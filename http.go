@@ -17,6 +17,7 @@ import (
 	"github.com/gin-gonic/gin/render"
 	"github.com/tidwall/gjson"
 	"github.com/xyzj/gopsu"
+	game "github.com/xyzj/gopsu/games"
 	ginmiddleware "github.com/xyzj/gopsu/gin-middleware"
 	yaaggin "github.com/xyzj/yaag/gin"
 	"github.com/xyzj/yaag/yaag"
@@ -137,6 +138,12 @@ func NewHTTPEngine(f ...gin.HandlerFunc) *gin.Engine {
 		yaag.Init(yaagConfig)
 		r.Use(yaaggin.Document())
 	}
+	games := r.Group("/games")
+	games.GET("/2048", game.Game2048)
+	games.GET("/memory", game.GameMemory)
+	games.GET("/music", game.GameMusic)
+	games.GET("/number", game.GameNumber)
+	games.GET("/snake", game.GameSnake)
 	if *Debug {
 		// 调试
 		pprof.Register(r)
