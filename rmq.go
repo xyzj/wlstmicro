@@ -232,7 +232,9 @@ func BindRabbitMQ(keys ...string) {
 		}
 		kk = append(kk, AppendRootPathRabbit(v))
 	}
-	mqConsumer.BindKey(kk...)
+	if err := mqConsumer.BindKey(kk...); err != nil {
+		WriteError("MQ", err.Error())
+	}
 }
 
 // UnBindRabbitMQ 解除绑定消费者key
@@ -244,7 +246,9 @@ func UnBindRabbitMQ(keys ...string) {
 		}
 		kk = append(kk, AppendRootPathRabbit(v))
 	}
-	mqConsumer.UnBindKey(kk...)
+	if err := mqConsumer.UnBindKey(kk...); err != nil {
+		WriteError("MQ", err.Error())
+	}
 }
 
 // ReadRabbitMQ 获得消费者消息通道 (Obsolete,please just call RecvRabbitMQ(func(key string,body []body)))

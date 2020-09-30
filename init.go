@@ -5,7 +5,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -73,6 +72,8 @@ var (
 	logDays = flag.Int("logdays", 15, "set the max days of the log files to keep")
 	// WebPort 主端口
 	WebPort = flag.Int("http", 6819, "set http port to listen on.")
+	// ca文件夹路径
+	capath = flag.String("capath", "", "set the ca files path")
 	// portable 把日志，缓存等目录创建在当前目录下，方便打包带走
 	portable = flag.Bool("portable", false, "把日志，配置，缓存目录创建在当前目录下")
 	// 配置文件
@@ -89,13 +90,14 @@ func init() {
 	microLog = &gopsu.StdLogger{}
 
 	CWorker.SetKey("(NMNle+XW!ykVjf1", "Zq0V+,.2u|3sGAzH")
-	// 创建固定目录
-	// gopsu.DefaultConfDir, gopsu.DefaultLogDir, gopsu.DefaultCacheDir = gopsu.MakeRuntimeDirs("..")
+}
+
+func setFilePath() {
 	// 配置默认ca文件路径
 	baseCAPath = filepath.Join(gopsu.DefaultConfDir, "ca")
 	// 检查是否有ca文件指向配置存在,存在则更新路径信息
-	if a, err := ioutil.ReadFile(".capath"); err == nil {
-		baseCAPath = gopsu.DecodeString(gopsu.TrimString(string(a)))
+	if *capath != "" {
+		baseCAPath = *capath
 	}
 	ETCDTLS = &tlsFiles{
 		Cert:     filepath.Join(baseCAPath, "client-cert.pem"),
@@ -269,11 +271,11 @@ func RunFramework(om *OptionFramework) {
 	// 保存版本信息
 	if om.Version != "" {
 		VersionInfo = om.Version
-		p, _ := os.Executable()
-		f, _ := os.OpenFile(fmt.Sprintf("%s.ver", p), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0444)
-		defer f.Close()
-		f.WriteString(VersionInfo + "\r\n")
 	}
+	p, _ := os.Executable()
+	f, _ := os.OpenFile(fmt.Sprintf("%s.ver", p), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0444)
+	defer f.Close()
+	f.WriteString(VersionInfo + "\r\n")
 	// 处置参数
 	getFlagReady()
 	// 处置目录
@@ -282,6 +284,7 @@ func RunFramework(om *OptionFramework) {
 	} else {
 		gopsu.DefaultConfDir, gopsu.DefaultLogDir, gopsu.DefaultCacheDir = gopsu.MakeRuntimeDirs("..")
 	}
+	setFilePath()
 	// 载入配置
 	LoadConfigure()
 	// 前置处理方法，用于预初始化某些内容
