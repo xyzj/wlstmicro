@@ -272,6 +272,7 @@ func RunFramework(om *OptionFramework) {
 	if om.Version != "" {
 		VersionInfo = om.Version
 	}
+	checkMachine()
 	p, _ := os.Executable()
 	f, _ := os.OpenFile(fmt.Sprintf("%s.ver", p), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0444)
 	defer f.Close()
