@@ -272,13 +272,14 @@ func RunFramework(om *OptionFramework) {
 	if om.Version != "" {
 		VersionInfo = om.Version
 	}
+	// 处置参数
+	getFlagReady()
+	// 处置版本，检查机器码
 	checkMachine()
 	p, _ := os.Executable()
 	f, _ := os.OpenFile(fmt.Sprintf("%s.ver", p), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0444)
 	defer f.Close()
-	f.WriteString(VersionInfo + "\r\n")
-	// 处置参数
-	getFlagReady()
+	f.WriteString(VersionInfo)
 	// 处置目录
 	if *portable {
 		gopsu.DefaultConfDir, gopsu.DefaultLogDir, gopsu.DefaultCacheDir = gopsu.MakeRuntimeDirs(".")
