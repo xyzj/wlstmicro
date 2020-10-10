@@ -28,6 +28,10 @@ type etcdConfigure struct {
 	regAddr string
 	// 注册根路径
 	root string
+	// user
+	username string
+	// pwd
+	password string
 }
 
 func (conf *etcdConfigure) show() string {
@@ -60,11 +64,13 @@ func NewETCDClient(svrName, svrType, svrProtocol string) bool {
 	if !etcdConf.enable {
 		return false
 	}
+	etcdConf.username = "root"
+	etcdConf.password = gopsu.DecodeString("wMQLEoOHM2eOF6O7Ho8MH74jZ1vMs5i1B+VL+ozl")
 	var err error
 	if etcdConf.usetls {
-		etcdClient, err = microgo.NewEtcdv3ClientTLS([]string{etcdConf.addr}, ETCDTLS.Cert, ETCDTLS.Key, ETCDTLS.ClientCA)
+		etcdClient, err = microgo.NewEtcdv3ClientTLS([]string{etcdConf.addr}, ETCDTLS.Cert, ETCDTLS.Key, ETCDTLS.ClientCA, etcdConf.username, etcdConf.password)
 	} else {
-		etcdClient, err = microgo.NewEtcdv3Client([]string{etcdConf.addr})
+		etcdClient, err = microgo.NewEtcdv3Client([]string{etcdConf.addr}, etcdConf.username, etcdConf.password)
 	}
 	if err != nil {
 		WriteError("ETCD", "Failed connect to "+etcdConf.addr+"|"+err.Error())
