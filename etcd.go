@@ -28,9 +28,11 @@ type etcdConfigure struct {
 	regAddr string
 	// 注册根路径
 	root string
+	// enable auth
+	useauth bool
 	// user
 	username string
-	// pwd
+	// passwd
 	password string
 }
 
@@ -51,6 +53,7 @@ func NewETCDClient(svrName, svrType, svrProtocol string) bool {
 	etcdConf.addr = AppConf.GetItemDefault("etcd_addr", "127.0.0.1:2378", "etcd服务地址,ip:port格式")
 	etcdConf.regAddr = AppConf.GetItemDefault("etcd_reg", "127.0.0.1", "服务注册地址,ip[:port]格式，不指定port时，自动使用http启动参数的端口")
 	etcdConf.enable, _ = strconv.ParseBool(AppConf.GetItemDefault("etcd_enable", "true", "是否启用etcd"))
+	etcdConf.useauth, _ = strconv.ParseBool(AppConf.GetItemDefault("etcd_auth", "true", "连接etcd时是否需要认证"))
 	etcdConf.usetls, _ = strconv.ParseBool(AppConf.GetItemDefault("etcd_tls", "true", "是否使用证书连接etcd服务"))
 	if !etcdConf.usetls {
 		etcdConf.addr = strings.Replace(etcdConf.addr, "2378", "2379", 1)
@@ -64,8 +67,10 @@ func NewETCDClient(svrName, svrType, svrProtocol string) bool {
 	if !etcdConf.enable {
 		return false
 	}
-	etcdConf.username = "root"
-	etcdConf.password = gopsu.DecodeString("wMQLEoOHM2eOF6O7Ho8MH74jZ1vMs5i1B+VL+ozl")
+	if etcdConf.useauth {
+		etcdConf.username = "root"
+		etcdConf.password = gopsu.DecodeString("wMQLEoOHM2eOF6O7Ho8MH74jZ1vMs5i1B+VL+ozl")
+	}
 	var err error
 	if etcdConf.usetls {
 		etcdClient, err = microgo.NewEtcdv3ClientTLS([]string{etcdConf.addr}, ETCDTLS.Cert, ETCDTLS.Key, ETCDTLS.ClientCA, etcdConf.username, etcdConf.password)
