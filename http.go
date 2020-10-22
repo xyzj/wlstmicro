@@ -112,6 +112,9 @@ func NewHTTPEngine(f ...gin.HandlerFunc) *gin.Engine {
 	r.NoRoute(ginmiddleware.Page404)
 	r.GET("/", ginmiddleware.PageDefault)
 	r.POST("/", ginmiddleware.PageDefault)
+	r.GET("/ip", func(c *gin.Context) {
+		c.String(200, c.ClientIP())
+	})
 	r.GET("/health", ginmiddleware.PageDefault)
 	r.GET("/clearlog", ginmiddleware.CheckRequired("name"), ginmiddleware.Clearlog)
 	r.GET("/runtime", ginmiddleware.PageRuntime)

@@ -187,6 +187,8 @@ type OptionMQConsumer struct {
 	QueueName string
 	// 消费者绑定key
 	BindKeys []string
+	// 消费者key获取方法
+	BindKeysFunc func() ([]string, bool)
 	// 消费者数据处理方法
 	RecvFunc func(key string, body []byte)
 	// 启用
@@ -230,7 +232,7 @@ type OptionFramework struct {
 	// 启用http服务模块
 	UseHTTP *OptionHTTP
 	// 启动参数处理方法，在模块初始化之前执行
-	// 非线程执行，注意不要阻塞
+	// 非线程执行，注意不要阻塞loadWhiteList
 	// 提交方法名称时最后不要加`()`，表示把方法作为参数，而不是把方法的执行结果回传
 	FrontFunc func()
 	// 无参数的扩展方法，用于处理额外的数据或变量，所有模块初始化完成后执行
@@ -370,6 +372,11 @@ func RunFramework(om *OptionFramework) {
 	if om.UseMQConsumer != nil {
 		if om.UseMQConsumer.Activation {
 			if NewMQConsumer(om.UseMQConsumer.QueueName) {
+				if om.UseMQConsumer.BindKeysFunc != nil {
+					if ss, ok := om.UseMQConsumer.BindKeysFunc(); ok {
+						om.UseMQConsumer.BindKeys = ss
+					}
+				}
 				BindRabbitMQ(om.UseMQConsumer.BindKeys...)
 				go RecvRabbitMQ(om.UseMQConsumer.RecvFunc)
 			}
