@@ -410,8 +410,9 @@ func RunFramework(om *OptionFramework) {
 func LoadConfigure() {
 	// 检查配置
 	if *conf == "" {
-		println("no config file set")
-		os.Exit(1)
+		AppConf = &gopsu.ConfData{}
+		println("Warning: no config file set !!!")
+		return
 	}
 	f := *conf
 	if !strings.ContainsAny(f, "\\/") {
