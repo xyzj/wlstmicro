@@ -141,12 +141,7 @@ func NewHTTPEngine(f ...gin.HandlerFunc) *gin.Engine {
 		yaag.Init(yaagConfig)
 		r.Use(yaaggin.Document())
 	}
-	games := r.Group("/games")
-	games.GET("/2048", game.Game2048)
-	games.GET("/memory", game.GameMemory)
-	games.GET("/music", game.GameMusic)
-	games.GET("/number", game.GameNumber)
-	games.GET("/snake", game.GameSnake)
+	r.GET("/game/:game", game.GameGroup)
 	if *Debug {
 		// 调试
 		pprof.Register(r)
