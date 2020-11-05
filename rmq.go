@@ -14,9 +14,9 @@ import (
 	"github.com/streadway/amqp"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
+	v6 "github.com/xyzj/dp/v6"
 	"github.com/xyzj/gopsu"
 	"github.com/xyzj/gopsu/mq"
-	v6 "gitlab.local/dp/v6"
 )
 
 var (
