@@ -2,6 +2,7 @@ package wmv2
 
 import (
 	"fmt"
+	"net"
 	"strconv"
 	"strings"
 
@@ -19,6 +20,8 @@ type etcdConfigure struct {
 	usetls bool
 	// 是否启用etcd
 	enable bool
+	// 优先v6
+	v6 bool
 	// 对外公布注册地址
 	regAddr string
 	// 注册根路径
@@ -43,15 +46,16 @@ func (conf *etcdConfigure) show(rootPath string) string {
 // NewETCDClient NewETCDClient
 func (fw *WMFrameWorkV2) newETCDClient() bool {
 	fw.etcdCtl.addr = fw.wmConf.GetItemDefault("etcd_addr", "127.0.0.1:2378", "etcd服务地址,ip:port格式")
-	fw.etcdCtl.regAddr = fw.wmConf.GetItemDefault("etcd_reg", "127.0.0.1", "服务注册地址,ip[:port]格式，不指定port时，自动使用http启动参数的端口")
+	fw.etcdCtl.regAddr = fw.wmConf.GetItemDefault("etcd_reg", "", "服务注册地址,ip[:port]格式，不指定port时，自动使用http启动参数的端口")
 	fw.etcdCtl.enable, _ = strconv.ParseBool(fw.wmConf.GetItemDefault("etcd_enable", "true", "是否启用etcd"))
 	fw.etcdCtl.useauth, _ = strconv.ParseBool(fw.wmConf.GetItemDefault("etcd_auth", "true", "连接etcd时是否需要认证"))
 	fw.etcdCtl.usetls, _ = strconv.ParseBool(fw.wmConf.GetItemDefault("etcd_tls", "true", "是否使用证书连接etcd服务"))
+	fw.etcdCtl.v6, _ = strconv.ParseBool(fw.wmConf.GetItemDefault("etcd_v6", "false", "是否优先使用v6地址"))
 	if !fw.etcdCtl.usetls {
 		fw.etcdCtl.addr = strings.Replace(fw.etcdCtl.addr, "2378", "2379", 1)
 	}
 	if fw.etcdCtl.regAddr == "127.0.0.1" || fw.etcdCtl.regAddr == "" {
-		fw.etcdCtl.regAddr, _ = gopsu.ExternalIP()
+		fw.etcdCtl.regAddr = gopsu.RealIP(fw.etcdCtl.v6)
 		fw.wmConf.UpdateItem("etcd_reg", fw.etcdCtl.regAddr)
 	}
 	fw.wmConf.Save()
@@ -88,12 +92,14 @@ func (fw *WMFrameWorkV2) newETCDClient() bool {
 	if len(fw.rootPath) > 0 {
 		fw.etcdCtl.Client.SetRoot(fw.rootPath)
 	}
-	a := strings.Split(fw.etcdCtl.regAddr, ":")
-	regPort := strconv.Itoa(*webPort)
-	if len(a) > 1 {
-		regPort = a[1]
+	a, b, err := net.SplitHostPort(fw.etcdCtl.regAddr)
+	if err != nil {
+		a = fw.etcdCtl.regAddr
 	}
-	fw.etcdCtl.Client.Register(fw.serverName, a[0], regPort, httpType, "json")
+	if b == "" {
+		b = strconv.Itoa(*webPort)
+	}
+	fw.etcdCtl.Client.Register(fw.serverName, a, b, httpType, "json")
 	// 获取服务列表信息
 	fw.etcdCtl.Client.Watcher()
 	return true

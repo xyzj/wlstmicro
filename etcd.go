@@ -2,6 +2,7 @@ package wlstmicro
 
 import (
 	"fmt"
+	"net"
 	"strconv"
 	"strings"
 
@@ -24,6 +25,8 @@ type etcdConfigure struct {
 	usetls bool
 	// 是否启用etcd
 	enable bool
+	// 是否优先使用v6地址
+	v6 bool
 	// 对外公布注册地址
 	regAddr string
 	// 注册根路径
@@ -55,11 +58,12 @@ func NewETCDClient(svrName, svrType, svrProtocol string) bool {
 	etcdConf.enable, _ = strconv.ParseBool(AppConf.GetItemDefault("etcd_enable", "true", "是否启用etcd"))
 	etcdConf.useauth, _ = strconv.ParseBool(AppConf.GetItemDefault("etcd_auth", "true", "连接etcd时是否需要认证"))
 	etcdConf.usetls, _ = strconv.ParseBool(AppConf.GetItemDefault("etcd_tls", "true", "是否使用证书连接etcd服务"))
+	etcdConf.v6, _ = strconv.ParseBool(AppConf.GetItemDefault("etcd_v6", "false", "是否优先使用v6地址"))
 	if !etcdConf.usetls {
 		etcdConf.addr = strings.Replace(etcdConf.addr, "2378", "2379", 1)
 	}
 	if etcdConf.regAddr == "127.0.0.1" || etcdConf.regAddr == "" {
-		etcdConf.regAddr, _ = gopsu.ExternalIP()
+		etcdConf.regAddr = gopsu.RealIP(etcdConf.v6)
 		AppConf.UpdateItem("etcd_reg", etcdConf.regAddr)
 	}
 	AppConf.Save()
@@ -90,12 +94,14 @@ func NewETCDClient(svrName, svrType, svrProtocol string) bool {
 	if len(rootPath) > 0 {
 		etcdClient.SetRoot(rootPath)
 	}
-	a := strings.Split(etcdConf.regAddr, ":")
-	regPort := strconv.Itoa(*WebPort)
-	if len(a) > 1 {
-		regPort = a[1]
+	a, b, err := net.SplitHostPort(etcdConf.regAddr)
+	if err != nil {
+		a = etcdConf.regAddr
 	}
-	etcdClient.Register(svrName, a[0], regPort, svrType, svrProtocol)
+	if b == "" {
+		b = strconv.Itoa(*WebPort)
+	}
+	etcdClient.Register(svrName, a, b, svrType, svrProtocol)
 	// 获取服务列表信息
 	etcdClient.Watcher()
 	return true
