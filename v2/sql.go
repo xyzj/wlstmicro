@@ -37,20 +37,20 @@ type dbConfigure struct {
 	// mrg_myisam分表行数，默认4800000
 	mrgSubTableRows int64
 	// client
-	Client *db.SQLPool
+	client *db.SQLPool
 }
 
 func (conf *dbConfigure) show() string {
 	conf.forshow, _ = sjson.Set("", "addr", conf.addr)
-	conf.forshow, _ = sjson.Set(conf.forshow, "user",CWorker.Encrypt(conf.user))
-	conf.forshow, _ = sjson.Set(conf.forshow, "pwd",CWorker.Encrypt(conf.pwd))
+	conf.forshow, _ = sjson.Set(conf.forshow, "user", CWorker.Encrypt(conf.user))
+	conf.forshow, _ = sjson.Set(conf.forshow, "pwd", CWorker.Encrypt(conf.pwd))
 	conf.forshow, _ = sjson.Set(conf.forshow, "dbname", conf.database)
 	conf.forshow, _ = sjson.Set(conf.forshow, "driver", conf.driver)
 	conf.forshow, _ = sjson.Set(conf.forshow, "enable", conf.enable)
 	return conf.forshow
 }
 
-// Newfw.DBClient mariadb client
+// Newfw.dbCtl.client mariadb client
 func (fw *WMFrameWorkV2) newDBClient() bool {
 	fw.dbCtl.addr = fw.wmConf.GetItemDefault("db_addr", "127.0.0.1:3306", "sql服务地址,ip[:port[/instance]]格式")
 	fw.dbCtl.user = fw.wmConf.GetItemDefault("db_user", "root", "sql用户名")
@@ -63,7 +63,7 @@ func (fw *WMFrameWorkV2) newDBClient() bool {
 	if !fw.dbCtl.enable {
 		return false
 	}
-	fw.DBClient = &db.SQLPool{
+	fw.dbCtl.client = &db.SQLPool{
 		User:         fw.dbCtl.user,
 		Server:       fw.dbCtl.addr,
 		Passwd:       fw.dbCtl.pwd,
@@ -80,11 +80,11 @@ func (fw *WMFrameWorkV2) newDBClient() bool {
 	}
 	switch fw.dbCtl.driver {
 	case "mssql":
-		fw.DBClient.DriverType = db.DriverMSSQL
+		fw.dbCtl.client.DriverType = db.DriverMSSQL
 	default:
-		fw.DBClient.DriverType = db.DriverMYSQL
+		fw.dbCtl.client.DriverType = db.DriverMYSQL
 	}
-	err := fw.DBClient.New()
+	err := fw.dbCtl.client.New()
 	if err != nil {
 		fw.dbCtl.enable = false
 		fw.WriteError("SQL", "Failed connect to server "+fw.dbCtl.addr+"|"+err.Error())
@@ -126,13 +126,13 @@ MAINTAIN:
 					if tableName == "" {
 						continue
 					}
-					_, _, size, rows, err := fw.DBClient.ShowTableInfo(tableName)
+					_, _, size, rows, err := fw.dbCtl.client.ShowTableInfo(tableName)
 					if err != nil {
 						fw.WriteError("SQL", "SHOW table "+tableName+" "+err.Error())
 						continue
 					}
 					if size >= fw.dbCtl.mrgSubTableSize || rows >= fw.dbCtl.mrgSubTableRows {
-						err = fw.DBClient.MergeTable(tableName, fw.dbCtl.mrgMaxSubTables)
+						err = fw.dbCtl.client.MergeTable(tableName, fw.dbCtl.mrgMaxSubTables)
 						if err != nil {
 							fw.WriteError("SQL", "MRG table "+tableName+" "+err.Error())
 							continue

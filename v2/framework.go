@@ -14,6 +14,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/tidwall/sjson"
 	"github.com/xyzj/gopsu"
+	"github.com/xyzj/gopsu/db"
 	ginmiddleware "github.com/xyzj/gopsu/gin-middleware"
 	msgctl "github.com/xyzj/proto/msgjk"
 )
@@ -341,4 +342,9 @@ func (fw *WMFrameWorkV2) Debug() bool {
 // ReadConfigKeys 获取配置所有key
 func (fw *WMFrameWorkV2) ReadConfigKeys() []string {
 	return fw.wmConf.GetKeys()
+}
+
+// DBClient dbclient
+func (fw *WMFrameWorkV2) DBClient() *db.SQLPool {
+	return fw.dbCtl.client
 }

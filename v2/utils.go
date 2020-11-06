@@ -8,7 +8,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/xyzj/gopsu"
-	"github.com/xyzj/gopsu/db"
 )
 
 // 启动参数
@@ -170,7 +169,6 @@ type WMFrameWorkV2 struct {
 	redisCtl       *redisConfigure
 	dbCtl          *dbConfigure
 	rmqCtl         *rabbitConfigure
-	DBClient       *db.SQLPool
 	tcpCtl         *tcpConfigure
 	httpClientPool *http.Client
 }

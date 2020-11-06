@@ -28,7 +28,7 @@ type redisConfigure struct {
 	// 是否启用redis
 	enable bool
 	// client
-	Client *redis.Client
+	client *redis.Client
 }
 
 func (conf *redisConfigure) show(rootPath string) string {
@@ -52,14 +52,14 @@ func (fw *WMFrameWorkV2) newRedisClient() bool {
 	}
 	var err error
 
-	fw.redisCtl.Client = redis.NewClient(&redis.Options{
+	fw.redisCtl.client = redis.NewClient(&redis.Options{
 		Addr:     fw.redisCtl.addr,
 		Password: fw.redisCtl.pwd,
 		DB:       fw.redisCtl.database,
 	})
 	ctx, cancel := context.WithTimeout(context.Background(), redisCtxTimeo)
 	defer cancel()
-	_, err = fw.redisCtl.Client.Ping(ctx).Result()
+	_, err = fw.redisCtl.client.Ping(ctx).Result()
 	if err != nil {
 		fw.redisCtl.enable = false
 		fw.WriteError("REDIS", "Failed connect to server "+fw.redisCtl.addr+"|"+err.Error())
@@ -84,7 +84,7 @@ func (fw *WMFrameWorkV2) ExpireRedis(key string, expire time.Duration) error {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), redisCtxTimeo)
 	defer cancel()
-	err := fw.redisCtl.Client.Expire(ctx, fw.AppendRootPathRedis(key), expire).Err()
+	err := fw.redisCtl.client.Expire(ctx, fw.AppendRootPathRedis(key), expire).Err()
 	if err != nil {
 		fw.WriteError("REDIS", "Failed update redis expire: "+key+"|"+err.Error())
 		return err
@@ -100,7 +100,7 @@ func (fw *WMFrameWorkV2) WriteRedis(key string, value interface{}, expire time.D
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), redisCtxTimeo)
 	defer cancel()
-	err := fw.redisCtl.Client.Set(ctx, fw.AppendRootPathRedis(key), value, expire).Err()
+	err := fw.redisCtl.client.Set(ctx, fw.AppendRootPathRedis(key), value, expire).Err()
 	if err != nil {
 		fw.WriteError("REDIS", "Failed write redis data: "+key+"|"+err.Error())
 		return err
@@ -119,7 +119,7 @@ func (fw *WMFrameWorkV2) EraseRedis(key ...string) error {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), redisCtxTimeo)
 	defer cancel()
-	err := fw.redisCtl.Client.Del(ctx, keys...).Err()
+	err := fw.redisCtl.client.Del(ctx, keys...).Err()
 	if err != nil {
 		fw.WriteError("REDIS", fmt.Sprintf("Failed erase redis data: %+v|%s", keys, err.Error()))
 		return err
@@ -135,14 +135,14 @@ func (fw *WMFrameWorkV2) EraseAllRedis(key string) error {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), redisCtxTimeo)
 	defer cancel()
-	val := fw.redisCtl.Client.Keys(ctx, fw.AppendRootPathRedis(key))
+	val := fw.redisCtl.client.Keys(ctx, fw.AppendRootPathRedis(key))
 	if val.Err() != nil {
 		return val.Err()
 	}
 	if len(val.Val()) > 0 {
 		ctx2, cancel := context.WithTimeout(context.Background(), redisCtxTimeo)
 		defer cancel()
-		err := fw.redisCtl.Client.Del(ctx2, val.Val()...).Err()
+		err := fw.redisCtl.client.Del(ctx2, val.Val()...).Err()
 		if err != nil {
 			fw.WriteError("REDIS", "Failed erase all redis data: "+key+"|"+err.Error())
 			return err
@@ -160,7 +160,7 @@ func (fw *WMFrameWorkV2) ReadRedis(key string) (string, error) {
 	key = fw.AppendRootPathRedis(key)
 	ctx, cancel := context.WithTimeout(context.Background(), redisCtxTimeo)
 	defer cancel()
-	val := fw.redisCtl.Client.Get(ctx, key)
+	val := fw.redisCtl.client.Get(ctx, key)
 	if val.Err() != nil {
 		fw.WriteError("REDIS", "Failed read redis data: "+key+"|"+val.Err().Error())
 		return "", val.Err()
@@ -175,7 +175,7 @@ func (fw *WMFrameWorkV2) ReadAllRedisKeys(key string) *redis.StringSliceCmd {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), redisCtxTimeo)
 	defer cancel()
-	return fw.redisCtl.Client.Keys(ctx, fw.AppendRootPathRedis(key))
+	return fw.redisCtl.client.Keys(ctx, fw.AppendRootPathRedis(key))
 }
 
 // ReadAllRedis 模糊读redis
@@ -186,7 +186,7 @@ func (fw *WMFrameWorkV2) ReadAllRedis(key string) ([]string, error) {
 	key = fw.AppendRootPathRedis(key)
 	ctx, cancel := context.WithTimeout(context.Background(), redisCtxTimeo)
 	defer cancel()
-	val := fw.redisCtl.Client.Keys(ctx, key)
+	val := fw.redisCtl.client.Keys(ctx, key)
 	if val.Err() != nil {
 		fw.WriteError("REDIS", "Failed read redis data: "+key+"|"+val.Err().Error())
 		return []string{}, val.Err()
@@ -195,7 +195,7 @@ func (fw *WMFrameWorkV2) ReadAllRedis(key string) ([]string, error) {
 	for _, v := range val.Val() {
 		ctx, cancel := context.WithTimeout(context.Background(), redisCtxTimeo)
 		defer cancel()
-		vv := fw.redisCtl.Client.Get(ctx, v)
+		vv := fw.redisCtl.client.Get(ctx, v)
 		if vv.Err() == nil {
 			s = append(s, vv.Val())
 		}

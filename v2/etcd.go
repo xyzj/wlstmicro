@@ -33,7 +33,7 @@ type etcdConfigure struct {
 	// passwd
 	password string
 	// Client
-	Client *microgo.Etcdv3Client
+	client *microgo.Etcdv3Client
 }
 
 func (conf *etcdConfigure) show(rootPath string) string {
@@ -69,16 +69,16 @@ func (fw *WMFrameWorkV2) newETCDClient() bool {
 	}
 	var err error
 	if fw.etcdCtl.usetls {
-		fw.etcdCtl.Client, err = microgo.NewEtcdv3ClientTLS([]string{fw.etcdCtl.addr}, fw.tlsCert, fw.tlsKey, fw.tlsRoot, fw.etcdCtl.username, fw.etcdCtl.password)
+		fw.etcdCtl.client, err = microgo.NewEtcdv3ClientTLS([]string{fw.etcdCtl.addr}, fw.tlsCert, fw.tlsKey, fw.tlsRoot, fw.etcdCtl.username, fw.etcdCtl.password)
 	} else {
-		fw.etcdCtl.Client, err = microgo.NewEtcdv3Client([]string{fw.etcdCtl.addr}, fw.etcdCtl.username, fw.etcdCtl.password)
+		fw.etcdCtl.client, err = microgo.NewEtcdv3Client([]string{fw.etcdCtl.addr}, fw.etcdCtl.username, fw.etcdCtl.password)
 	}
 	if err != nil {
 		fw.etcdCtl.enable = false
 		fw.WriteError("ETCD", "Failed connect to "+fw.etcdCtl.addr+"|"+err.Error())
 		return false
 	}
-	fw.etcdCtl.Client.SetLogger(&StdLogger{
+	fw.etcdCtl.client.SetLogger(&StdLogger{
 		Name:        "ETCD",
 		LogReplacer: strings.NewReplacer("[", "", "]", ""),
 		LogWriter:   fw.wmLog,
@@ -90,7 +90,7 @@ func (fw *WMFrameWorkV2) newETCDClient() bool {
 		httpType = "http"
 	}
 	if len(fw.rootPath) > 0 {
-		fw.etcdCtl.Client.SetRoot(fw.rootPath)
+		fw.etcdCtl.client.SetRoot(fw.rootPath)
 	}
 	a, b, err := net.SplitHostPort(fw.etcdCtl.regAddr)
 	if err != nil {
@@ -99,9 +99,9 @@ func (fw *WMFrameWorkV2) newETCDClient() bool {
 	if b == "" {
 		b = strconv.Itoa(*webPort)
 	}
-	fw.etcdCtl.Client.Register(fw.serverName, a, b, httpType, "json")
+	fw.etcdCtl.client.Register(fw.serverName, a, b, httpType, "json")
 	// 获取服务列表信息
-	fw.etcdCtl.Client.Watcher()
+	fw.etcdCtl.client.Watcher()
 	return true
 }
 
@@ -115,7 +115,7 @@ func (fw *WMFrameWorkV2) Picker(svrName string) (string, error) {
 	if !fw.etcdCtl.enable {
 		return "", fmt.Errorf("etcd client not ready")
 	}
-	addr, err := fw.etcdCtl.Client.Picker(svrName)
+	addr, err := fw.etcdCtl.client.Picker(svrName)
 	if err != nil {
 		return "", err
 	}
@@ -127,7 +127,7 @@ func (fw *WMFrameWorkV2) PickerDetail(svrName string) (string, error) {
 	if !fw.etcdCtl.enable {
 		return "", fmt.Errorf("etcd client not ready")
 	}
-	addr, err := fw.etcdCtl.Client.PickerDetail(svrName)
+	addr, err := fw.etcdCtl.client.PickerDetail(svrName)
 	if err != nil {
 		return "", err
 	}
