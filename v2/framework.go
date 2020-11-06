@@ -60,7 +60,7 @@ func NewFrameWorkV2(versionInfo string) *WMFrameWorkV2 {
 		gopsu.DefaultConfDir, gopsu.DefaultLogDir, gopsu.DefaultCacheDir = gopsu.MakeRuntimeDirs("..")
 	}
 	// 日志
-	if *Debug {
+	if *debug {
 		*logLevel = 10
 	}
 	// 设置基础路径
@@ -331,4 +331,14 @@ func (fw *WMFrameWorkV2) SetServerName(s string) {
 // SetLoggerMark 设置日志文件标识
 func (fw *WMFrameWorkV2) SetLoggerMark(s string) {
 	fw.loggerMark = s
+}
+
+// Debug 返回是否debug模式
+func (fw *WMFrameWorkV2) Debug() bool {
+	return *debug
+}
+
+// ReadConfigKeys 获取配置所有key
+func (fw *WMFrameWorkV2) ReadConfigKeys() []string {
+	return fw.wmConf.GetKeys()
 }

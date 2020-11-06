@@ -56,7 +56,7 @@ func apidoc(c *gin.Context) {
 
 // NewHTTPEngine 创建gin引擎
 func (fw *WMFrameWorkV2) NewHTTPEngine(f ...gin.HandlerFunc) *gin.Engine {
-	if !*Debug {
+	if !*debug {
 		gin.SetMode(gin.ReleaseMode)
 	}
 	r := gin.New()
@@ -119,7 +119,7 @@ func (fw *WMFrameWorkV2) NewHTTPEngine(f ...gin.HandlerFunc) *gin.Engine {
 	r.Use(yaaggin.Document())
 	// have fun
 	r.GET("/game/:game", game.GameGroup)
-	// if *Debug {
+	// if *debug {
 	// 	// 调试
 	// 	pprof.Register(r)
 	// }
@@ -147,7 +147,7 @@ func (fw *WMFrameWorkV2) newHTTPService(r *gin.Engine) {
 	}
 
 	var err error
-	if *Debug || *forceHTTP {
+	if *debug || *forceHTTP {
 		err = ginmiddleware.ListenAndServe(*webPort, r)
 	} else {
 		err = ginmiddleware.ListenAndServeTLS(*webPort, r, fw.httpCert, fw.httpKey, fw.tlsRoot)
@@ -163,7 +163,7 @@ func (fw *WMFrameWorkV2) newHTTPService(r *gin.Engine) {
 // 返回statusCode, body, headers, error
 func (fw *WMFrameWorkV2) DoRequest(req *http.Request, logdetail ...string) (int, []byte, map[string]string, error) {
 	level := 20
-	if !*Debug {
+	if !*debug {
 		if len(logdetail) == 0 || logdetail[0] == "nil" {
 			level = 0
 		}

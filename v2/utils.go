@@ -15,8 +15,8 @@ import (
 var (
 	// forceHTTP 强制http
 	forceHTTP = flag.Bool("forcehttp", false, "set true to use HTTP anyway.")
-	// Debug 是否启用调试模式
-	Debug = flag.Bool("debug", false, "set if enable debug info.")
+	//  是否启用调试模式
+	debug = flag.Bool("debug", false, "set if enable debug info.")
 	// logLevel 日志等级，可选项10,20,30,40
 	logLevel = flag.Int("loglevel", 20, "set the file log level. Enable value is: 10,20,30,40; 0-disable file log; -1-disable all log")
 	// logDays 日志文件保留天数，默认15

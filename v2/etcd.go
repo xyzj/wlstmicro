@@ -86,7 +86,7 @@ func (fw *WMFrameWorkV2) newETCDClient() bool {
 
 	// 注册自身
 	var httpType = "https"
-	if *Debug || *forceHTTP {
+	if *debug || *forceHTTP {
 		httpType = "http"
 	}
 	if len(fw.rootPath) > 0 {
