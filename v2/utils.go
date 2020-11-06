@@ -151,6 +151,7 @@ type WMFrameWorkV2 struct {
 	rootPathRedis string
 	rootPathMQ    string
 	gpsTimer      int64 // 启用gps校时,0-不启用，1-启用（30～900s内进行矫正），2-强制对时
+	httpProtocol string
 	// tls配置
 	baseCAPath string
 	tlsCert    string //  = filepath.Join(baseCAPath, "client-cert.pem")

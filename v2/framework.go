@@ -275,6 +275,16 @@ func (fw *WMFrameWorkV2) ReadConfigItem(key, value, remark string) string {
 	return fw.wmConf.GetItemDefault(key, value, remark)
 }
 
+// ReadConfigKeys 获取配置所有key
+func (fw *WMFrameWorkV2) ReadConfigKeys() []string {
+	return fw.wmConf.GetKeys()
+}
+
+// WriteConfigItem 更新key
+func (fw *WMFrameWorkV2) WriteConfigItem(key, value string) {
+	fw.wmConf.UpdateItem(key, value)
+}
+
 // WriteConfig 读取配置参数
 func (fw *WMFrameWorkV2) WriteConfig() {
 	fw.wmConf.Save()
@@ -314,6 +324,11 @@ func (fw *WMFrameWorkV2) VersionInfo() string {
 	return fw.versionInfo
 }
 
+// WebPort http 端口
+func (fw *WMFrameWorkV2) WebPort() int {
+	return *webPort
+}
+
 // MQFlag mq标识
 func (fw *WMFrameWorkV2) MQFlag() string {
 	return fw.tcpCtl.mqFlag
@@ -339,12 +354,12 @@ func (fw *WMFrameWorkV2) Debug() bool {
 	return *debug
 }
 
-// ReadConfigKeys 获取配置所有key
-func (fw *WMFrameWorkV2) ReadConfigKeys() []string {
-	return fw.wmConf.GetKeys()
-}
-
 // DBClient dbclient
 func (fw *WMFrameWorkV2) DBClient() *db.SQLPool {
 	return fw.dbCtl.client
+}
+
+// HTTPProtocol http协议
+func (fw *WMFrameWorkV2) HTTPProtocol() string {
+	return fw.httpProtocol
 }

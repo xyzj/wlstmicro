@@ -148,8 +148,10 @@ func (fw *WMFrameWorkV2) newHTTPService(r *gin.Engine) {
 
 	var err error
 	if *debug || *forceHTTP {
+		fw.httpProtocol="http://"
 		err = ginmiddleware.ListenAndServe(*webPort, r)
 	} else {
+		fw.httpProtocol="https://"
 		err = ginmiddleware.ListenAndServeTLS(*webPort, r, fw.httpCert, fw.httpKey, fw.tlsRoot)
 	}
 	if err != nil {
