@@ -152,7 +152,7 @@ func (fw *WMFrameWorkV2) newHTTPService(r *gin.Engine) {
 		err = ginmiddleware.ListenAndServe(*webPort, r)
 	} else {
 		fw.httpProtocol="https://"
-		err = ginmiddleware.ListenAndServeTLS(*webPort, r, fw.httpCert, fw.httpKey, fw.tlsRoot)
+		err = ginmiddleware.ListenAndServeTLS(*webPort, r, fw.httpCert, fw.httpKey, "")
 	}
 	if err != nil {
 		fw.WriteError("HTTP", "Failed start HTTP(S) server at :"+strconv.Itoa(*webPort)+"|"+err.Error())
