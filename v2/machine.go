@@ -16,19 +16,19 @@ import (
 
 func machineCode() string {
 	var b bytes.Buffer
-	b.WriteString(fmt.Sprintf("%019d \\\n", runtime.NumCPU()))
+	b.WriteString(fmt.Sprintf("%03d", runtime.NumCPU()))
 	interfaces, err := net.Interfaces()
 	if err != nil {
-		panic("Error:" + err.Error())
+		panic("Error: try run with administrator rights")
 	}
 	for _, inter := range interfaces {
 		n := strings.ToLower(inter.Name)
 		if strings.Contains(n, "lo") || strings.HasPrefix(n, "v") || strings.HasPrefix(n, "t") || strings.HasPrefix(n, "d") || strings.HasPrefix(n, "is") {
 			continue
 		}
-		b.WriteString(inter.HardwareAddr.String() + " \\\nend")
+		b.WriteString(inter.HardwareAddr.String())
 	}
-	return base64.StdEncoding.EncodeToString(gopsu.DoZlibCompress(b.Bytes()))
+	return strings.ReplaceAll(base64.StdEncoding.EncodeToString(gopsu.CompressData(b.Bytes(), gopsu.ArchiveSnappy))[3:], "=", "")
 }
 
 func (fw *WMFrameWorkV2) checkMachine() {
@@ -45,7 +45,7 @@ func (fw *WMFrameWorkV2) checkMachine() {
 						println("wrong machine.")
 						os.Exit(21)
 					}
-					if gopsu.DecodeString(gopsu.TrimString(string(b))) != machineCode() {
+					if gopsu.TrimString(string(b))[9:] != machineCode() {
 						println("wrong machine.")
 						os.Exit(21)
 					}
