@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -178,7 +177,7 @@ func (fw *WMFrameWorkV2) newTCPService(t TCPBase) {
 	listener, ex := net.ListenTCP("tcp", &net.TCPAddr{IP: net.ParseIP(""), Port: *tcpPort, Zone: ""})
 	if ex != nil {
 		fw.WriteError("TCP", fmt.Sprintf("%s", ex.Error()))
-		os.Exit(21)
+		return
 	}
 	fw.WriteSystem("TCP", fmt.Sprintf("Success bind on port %d", *tcpPort))
 	defer func() {

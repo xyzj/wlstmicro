@@ -130,18 +130,6 @@ func (fw *WMFrameWorkV2) Start(opv2 *OptionFrameWorkV2) {
 			fw.newETCDClient()
 		}
 	}
-	// gin http
-	if opv2.UseHTTP != nil {
-		if opv2.UseHTTP.Activation {
-			ginmiddleware.SetVersionInfo(fw.versionInfo)
-			if opv2.UseHTTP.EngineFunc == nil {
-				opv2.UseHTTP.EngineFunc = func() *gin.Engine {
-					return fw.NewHTTPEngine()
-				}
-			}
-			go fw.newHTTPService(opv2.UseHTTP.EngineFunc())
-		}
-	}
 	// redis
 	if opv2.UseRedis != nil {
 		if opv2.UseRedis.Activation {
@@ -182,6 +170,18 @@ func (fw *WMFrameWorkV2) Start(opv2 *OptionFrameWorkV2) {
 	if opv2.UseTCP != nil {
 		if opv2.UseTCP.Activation {
 			go fw.newTCPService(opv2.UseTCP.Client)
+		}
+	}
+	// gin http
+	if opv2.UseHTTP != nil {
+		if opv2.UseHTTP.Activation {
+			ginmiddleware.SetVersionInfo(fw.versionInfo)
+			if opv2.UseHTTP.EngineFunc == nil {
+				opv2.UseHTTP.EngineFunc = func() *gin.Engine {
+					return fw.NewHTTPEngine()
+				}
+			}
+			go fw.newHTTPService(opv2.UseHTTP.EngineFunc())
 		}
 	}
 	// gpstimer

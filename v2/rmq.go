@@ -56,8 +56,8 @@ type rabbitConfigure struct {
 
 func (conf *rabbitConfigure) show(rootPath string) string {
 	conf.forshow, _ = sjson.Set("", "addr", conf.addr)
-	conf.forshow, _ = sjson.Set(conf.forshow, "user",CWorker.Encrypt(conf.user))
-	conf.forshow, _ = sjson.Set(conf.forshow, "pwd",CWorker.Encrypt(conf.pwd))
+	conf.forshow, _ = sjson.Set(conf.forshow, "user", CWorker.Encrypt(conf.user))
+	conf.forshow, _ = sjson.Set(conf.forshow, "pwd", CWorker.Encrypt(conf.pwd))
 	conf.forshow, _ = sjson.Set(conf.forshow, "vhost", conf.vhost)
 	conf.forshow, _ = sjson.Set(conf.forshow, "exchange", conf.exchange)
 	conf.forshow, _ = sjson.Set(conf.forshow, "use_tls", conf.usetls)
@@ -164,7 +164,7 @@ RECV:
 			f(d.RoutingKey, d.Body)
 		}
 	}()
-
+	time.Sleep(time.Second)
 	mqRecvWaitLock.Wait()
 	time.Sleep(time.Second * 15)
 	goto RECV
