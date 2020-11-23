@@ -90,9 +90,7 @@ func (fw *WMFrameWorkV2) NewHTTPEngine(f ...gin.HandlerFunc) *gin.Engine {
 	r.HandleMethodNotAllowed = true
 	r.NoMethod(ginmiddleware.Page405)
 	r.NoRoute(ginmiddleware.Page404)
-	r.GET("/", ginmiddleware.PageDefault)
-	r.POST("/", ginmiddleware.PageDefault)
-	r.GET("/ip", func(c *gin.Context) {
+	r.GET("/whoami", func(c *gin.Context) {
 		c.String(200, c.ClientIP())
 	})
 	r.GET("/health", ginmiddleware.PageDefault)
@@ -129,14 +127,22 @@ func (fw *WMFrameWorkV2) NewHTTPEngine(f ...gin.HandlerFunc) *gin.Engine {
 // NewHTTPService 启动HTTP服务
 func (fw *WMFrameWorkV2) newHTTPService(r *gin.Engine) {
 	var sss string
+	var findRoot bool
 	for _, v := range r.Routes() {
-		if v.Path == "/" || v.Method == "HEAD" || strings.HasSuffix(v.Path, "*filepath") || strings.HasPrefix(v.Path, "/proxy") || strings.HasPrefix(v.Path, "/plain") {
+		if v.Path == "/" {
+			findRoot = true
+			continue
+		}
+		if v.Method == "HEAD" || strings.HasSuffix(v.Path, "*filepath") || strings.HasPrefix(v.Path, "/proxy") || strings.HasPrefix(v.Path, "/plain") {
 			continue
 		}
 		if strings.ContainsAny(v.Path, "*") && !strings.HasSuffix(v.Path, "filepath") {
 			continue
 		}
 		sss += fmt.Sprintf(`<a>%s: %s</a><br><br>`, v.Method, v.Path)
+	}
+	if !findRoot {
+		r.GET("/", ginmiddleware.PageDefault)
 	}
 	if sss != "" {
 		r.GET("/showroutes", func(c *gin.Context) {
@@ -148,10 +154,10 @@ func (fw *WMFrameWorkV2) newHTTPService(r *gin.Engine) {
 
 	var err error
 	if *debug || *forceHTTP {
-		fw.httpProtocol="http://"
+		fw.httpProtocol = "http://"
 		err = ginmiddleware.ListenAndServe(*webPort, r)
 	} else {
-		fw.httpProtocol="https://"
+		fw.httpProtocol = "https://"
 		err = ginmiddleware.ListenAndServeTLS(*webPort, r, fw.httpCert, fw.httpKey, "")
 	}
 	if err != nil {

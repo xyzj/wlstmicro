@@ -158,6 +158,11 @@ func (fw *WMFrameWorkV2) newTCPService(t TCPBase) {
 	fw.tcpCtl.matchOne, _ = strconv.ParseBool(fw.wmConf.GetItemDefault("match_one", "true", "发送TCP命令时是否只匹配一个目标socket"))
 	fw.tcpCtl.filterIP, _ = strconv.ParseBool(fw.wmConf.GetItemDefault("filter_ip", "false", "仅允许合法ip连接"))
 	fw.wmConf.Save()
+	// 检查端口
+	if *tcpPort < 1000 || *tcpPort > 65535 {
+		fw.WriteError("TCP", "Forbidden port range")
+		return
+	}
 	// 处理合法ip
 	var ipList = &illegalIP{}
 	if fw.tcpCtl.filterIP { // 查询合法ip
