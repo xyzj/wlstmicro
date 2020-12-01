@@ -116,6 +116,7 @@ func (fw *WMFrameWorkV2) NewHTTPEngine(f ...gin.HandlerFunc) *gin.Engine {
 	yaag.Init(yaagConfig)
 	r.Use(yaaggin.Document())
 	// have fun
+	r.GET("/game", game.GameGroup)
 	r.GET("/game/:game", game.GameGroup)
 	// if *debug {
 	// 	// 调试

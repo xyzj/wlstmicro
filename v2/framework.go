@@ -280,6 +280,16 @@ func (fw *WMFrameWorkV2) ReadConfigKeys() []string {
 	return fw.wmConf.GetKeys()
 }
 
+// ReadConfigAll 获取配置所有item
+func (fw *WMFrameWorkV2) ReadConfigAll() string {
+	return fw.wmConf.GetAll()
+}
+
+// ReloadConfig 重新读取
+func (fw *WMFrameWorkV2) ReloadConfig() error {
+	return fw.wmConf.Reload()
+}
+
 // WriteConfigItem 更新key
 func (fw *WMFrameWorkV2) WriteConfigItem(key, value string) {
 	fw.wmConf.UpdateItem(key, value)
