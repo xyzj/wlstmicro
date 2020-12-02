@@ -228,7 +228,7 @@ func (fw *WMFrameWorkV2) WriteRabbitMQ(key string, value []byte, expire time.Dur
 		return
 	}
 	key = fw.AppendRootPathRabbit(key)
-	fw.rmqCtl.mqProducer.SendCustom(&mq.RabbitMQData{
+	err := fw.rmqCtl.mqProducer.SendCustom(&mq.RabbitMQData{
 		RoutingKey: key,
 		Data: &amqp.Publishing{
 			ContentType:  "text/plain",
@@ -238,10 +238,14 @@ func (fw *WMFrameWorkV2) WriteRabbitMQ(key string, value []byte, expire time.Dur
 			Body:         value,
 		},
 	})
-	if msgproto != nil {
-		fw.WriteInfo("MQ", "S:"+key+"|"+gopsu.PB2String(v6.MsgFromBytes(value, msgproto[0])))
+	if err == nil {
+		if msgproto != nil {
+			fw.WriteInfo("MQ", "S:"+key+"|"+gopsu.PB2String(v6.MsgFromBytes(value, msgproto[0])))
+		} else {
+			fw.WriteInfo("MQ", "S:"+key+"|"+string(value))
+		}
 	} else {
-		fw.WriteInfo("MQ", "S:"+key+"|"+string(value))
+		fw.WriteError("MQ", "SndErr:"+key+"|"+err.Error())
 	}
 }
 
