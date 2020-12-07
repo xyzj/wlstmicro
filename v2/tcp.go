@@ -1,6 +1,7 @@
 package wmv2
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net"
@@ -47,7 +48,7 @@ type TCPBase interface {
 	// Clean 清理内部变量
 	Clean()
 	// Send 发送方法
-	Send()
+	Send(context.Context)
 	// Recv 接收方法
 	Recv()
 	// Put 设置发送内容
@@ -199,14 +200,12 @@ func (fw *WMFrameWorkV2) newTCPService(t TCPBase) {
 		}
 		// 检查合法ip
 		if fw.tcpCtl.filterIP {
-			if ipList.Check(strings.Split(conn.RemoteAddr().String(), ":")[0]) {
-				goto CONN
+			if !ipList.Check(strings.Split(conn.RemoteAddr().String(), ":")[0]) {
+				conn.Close()
+				fw.WriteWarning("TCP "+conn.RemoteAddr().String(), fmt.Sprintf("Illegal connection to %d, KICK OUT", *tcpPort))
+				continue
 			}
-			conn.Close()
-			fw.WriteWarning("TCP "+conn.RemoteAddr().String(), fmt.Sprintf("Illegal connection to %d, KICK OUT", *tcpPort))
-			continue
 		}
-	CONN:
 		fw.WriteWarning("TCP "+conn.RemoteAddr().String(), fmt.Sprintf("Connect to %d", *tcpPort))
 		var cli TCPBase
 		if a := fw.tcpCtl.tcpClientsManager.Get(); a != nil {
@@ -218,6 +217,7 @@ func (fw *WMFrameWorkV2) newTCPService(t TCPBase) {
 
 		go func(cli TCPBase, conn *net.TCPConn) {
 			var sockLocker sync.WaitGroup
+			var ctx, cancel = context.WithCancel(context.TODO())
 			defer func() {
 				if err := recover(); err != nil {
 					fw.WriteError("TCP", err.(error).Error())
@@ -225,11 +225,13 @@ func (fw *WMFrameWorkV2) newTCPService(t TCPBase) {
 				cli.Clean()
 				fw.tcpCtl.tcpClients.Delete(cli.ID())
 				fw.tcpCtl.tcpClientsManager.Put(cli)
+				cancel()
 			}()
 			cli.Connect(conn)
 			fw.tcpCtl.tcpClients.Store(cli.ID(), cli)
+
 			// 发送线程
-			go func(cli TCPBase) {
+			go func(cli TCPBase, ctx context.Context) {
 				defer func() {
 					if err := recover(); err != nil {
 						cli.Disconnect("Snd goroutine crash:" + errors.WithStack(err.(error)).Error())
@@ -237,14 +239,15 @@ func (fw *WMFrameWorkV2) newTCPService(t TCPBase) {
 					sockLocker.Done()
 				}()
 				sockLocker.Add(1)
-				cli.Send()
-			}(cli)
+				cli.Send(ctx)
+			}(cli, ctx)
 			// 接收线程
-			go func(TCPBase) {
+			go func(cli TCPBase) {
 				defer func() {
 					if err := recover(); err != nil {
 						cli.Disconnect("Rcv goroutine crash:" + errors.WithStack(err.(error)).Error())
 					}
+					cancel()
 					sockLocker.Done()
 				}()
 				sockLocker.Add(1)
@@ -279,7 +282,7 @@ func (t *tcpEcho) Put(d interface{}) error {
 	t.sendQueue.Put(d)
 	return nil
 }
-func (t *tcpEcho) Send() {
+func (t *tcpEcho) Send(context.Context) {
 	for {
 		if t.closed {
 			break
