@@ -181,14 +181,14 @@ func (fw *WMFrameWorkV2) DoRequest(req *http.Request, logdetail ...string) (int,
 	// fw.WriteLog("HTTP", fmt.Sprintf("%s request to %s|%s", req.Method, req.URL.String(), strings.Join(logdetail, ",")), 10)
 	resp, err := fw.httpClientPool.Do(req)
 	if err != nil {
-		fw.WriteError("HTTP", "request error: "+err.Error())
+		fw.WriteError("HTTP FWD", "request error: "+err.Error())
 		return 502, nil, nil, err
 	}
 	defer resp.Body.Close()
 	var b bytes.Buffer
 	_, err = b.ReadFrom(resp.Body)
 	if err != nil {
-		fw.WriteError("HTTP", "read body error: "+err.Error())
+		fw.WriteError("HTTP FWD", "read body error: "+err.Error())
 		return 502, nil, nil, err
 	}
 	h := make(map[string]string)
@@ -196,7 +196,7 @@ func (fw *WMFrameWorkV2) DoRequest(req *http.Request, logdetail ...string) (int,
 		h[k] = resp.Header.Get(k)
 	}
 	sc := resp.StatusCode
-	fw.WriteLog("HTTP", fmt.Sprintf("%s response %d from %s|%v", req.Method, sc, req.URL.String(), b.String()), level)
+	fw.WriteLog("HTTP FWD", fmt.Sprintf("%s response %d from %s|%v", req.Method, sc, req.URL.String(), b.String()), level)
 	return sc, b.Bytes(), h, nil
 }
 
