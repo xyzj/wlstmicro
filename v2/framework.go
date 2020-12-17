@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -142,6 +143,29 @@ func (fw *WMFrameWorkV2) Start(opv2 *OptionFrameWorkV2) {
 				if opv2.UseSQL.DoMERGE {
 					go fw.MaintainMrgTables()
 				}
+				// 检查是否存在更新的脚本
+				exe, _ := os.Executable()
+				upsql := exe + ".sql"
+				if gopsu.IsExist(upsql) {
+					b, err := ioutil.ReadFile(upsql)
+					if err != nil {
+						fw.WriteError("DBUP", err.Error())
+					} else {
+						var err error
+						for _, v := range strings.Split(string(b), "\n") {
+							s := gopsu.TrimString(v)
+							if s == "" {
+								continue
+							}
+							if _, _, err = fw.dbCtl.client.Exec(s); err != nil {
+								fw.WriteError("DBUP", s+" | "+err.Error())
+							}
+						}
+						if !*debug {
+							os.Remove(upsql)
+						}
+					}
+				}
 			}
 		}
 	}
@@ -260,6 +284,11 @@ func (fw *WMFrameWorkV2) loadConfigure(f string) {
 // GetLogger 返回日志模块
 func (fw *WMFrameWorkV2) GetLogger() gopsu.Logger {
 	return fw.wmLog
+}
+
+// ConfClient 配置文件实例
+func (fw *WMFrameWorkV2) ConfClient() *gopsu.ConfData {
+	return fw.wmConf
 }
 
 // ReadConfigItem 读取配置参数
