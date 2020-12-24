@@ -148,17 +148,17 @@ RECV:
 		}()
 		rcvMQ, err := fw.rmqCtl.mqConsumer.Recv()
 		if err != nil {
-			fw.WriteError("MQ", "Rcv Err: "+err.Error())
+			fw.WriteError("MQC", "Rcv Err: "+err.Error())
 			return
 		}
 		for d := range rcvMQ {
 			if gjson.ValidBytes(d.Body) {
-				fw.WriteDebug("MQ", "Debug-R:"+fw.rmqCtl.addr+"|"+d.RoutingKey+"|"+string(d.Body))
+				fw.WriteDebug("MQC", "Debug-R:"+fw.rmqCtl.addr+"|"+d.RoutingKey+"|"+string(d.Body))
 			} else {
 				if msgproto == nil {
-					fw.WriteDebug("MQ", "Debug-R:"+fw.rmqCtl.addr+"|"+d.RoutingKey+"|"+base64.StdEncoding.EncodeToString(d.Body))
+					fw.WriteDebug("MQC", "Debug-R:"+fw.rmqCtl.addr+"|"+d.RoutingKey+"|"+base64.StdEncoding.EncodeToString(d.Body))
 				} else {
-					fw.WriteDebug("MQ", "Debug-R:"+fw.rmqCtl.addr+"|"+d.RoutingKey+"|"+gopsu.PB2String(v6.MsgFromBytes(d.Body, msgproto[0])))
+					fw.WriteDebug("MQC", "Debug-R:"+fw.rmqCtl.addr+"|"+d.RoutingKey+"|"+gopsu.PB2String(v6.MsgFromBytes(d.Body, msgproto[0])))
 				}
 			}
 			f(d.RoutingKey, d.Body)
@@ -204,7 +204,7 @@ func (fw *WMFrameWorkV2) BindRabbitMQ(keys ...string) {
 		kk = append(kk, fw.AppendRootPathRabbit(v))
 	}
 	if err := fw.rmqCtl.mqConsumer.BindKey(kk...); err != nil {
-		fw.WriteError("MQ", err.Error())
+		fw.WriteError("MQC", err.Error())
 	}
 }
 
@@ -218,7 +218,7 @@ func (fw *WMFrameWorkV2) UnBindRabbitMQ(keys ...string) {
 		kk = append(kk, fw.AppendRootPathRabbit(v))
 	}
 	if err := fw.rmqCtl.mqConsumer.UnBindKey(kk...); err != nil {
-		fw.WriteError("MQ", err.Error())
+		fw.WriteError("MQC", err.Error())
 	}
 }
 
@@ -240,12 +240,12 @@ func (fw *WMFrameWorkV2) WriteRabbitMQ(key string, value []byte, expire time.Dur
 	})
 	if err == nil {
 		if msgproto != nil {
-			fw.WriteInfo("MQ", "S:"+key+"|"+gopsu.PB2String(v6.MsgFromBytes(value, msgproto[0])))
+			fw.WriteInfo("MQP", "S:"+key+"|"+gopsu.PB2String(v6.MsgFromBytes(value, msgproto[0])))
 		} else {
-			fw.WriteInfo("MQ", "S:"+key+"|"+string(value))
+			fw.WriteInfo("MQP", "S:"+key+"|"+string(value))
 		}
 	} else {
-		fw.WriteError("MQ", "SndErr:"+key+"|"+err.Error())
+		fw.WriteError("MQP", "SndErr:"+key+"|"+err.Error())
 	}
 }
 

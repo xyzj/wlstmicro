@@ -172,7 +172,7 @@ func (fw *WMFrameWorkV2) Start(opv2 *OptionFrameWorkV2) {
 	// 生产者
 	if opv2.UseMQProducer != nil {
 		if opv2.UseMQProducer.Activation {
-			go fw.newMQProducer()
+			fw.newMQProducer()
 		}
 	}
 	// 消费者
