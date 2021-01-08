@@ -152,6 +152,7 @@ func (fw *WMFrameWorkV2) Start(opv2 *OptionFrameWorkV2) {
 						fw.WriteError("DBUP", err.Error())
 					} else {
 						var err error
+						fw.WriteInfo("DBUP", "Try to update database by "+upsql)
 						for _, v := range strings.Split(string(b), "\n") {
 							s := gopsu.TrimString(v)
 							if s == "" {
