@@ -127,7 +127,7 @@ func (fw *WMFrameWorkV2) Start(opv2 *OptionFrameWorkV2) {
 			fw.serverName = opv2.UseETCD.SvrName
 		}
 		if opv2.UseETCD.Activation {
-			fw.newETCDClient()
+			go fw.newETCDClient()
 		}
 	}
 	// redis
