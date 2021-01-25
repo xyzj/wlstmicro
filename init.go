@@ -328,7 +328,7 @@ func RunFramework(om *OptionFramework) {
 			if om.UseETCD.SvrProtocol == "" {
 				om.UseETCD.SvrProtocol = "json"
 			}
-			NewETCDClient(om.UseETCD.SvrName, om.UseETCD.SvrType, om.UseETCD.SvrProtocol)
+			go NewETCDClient(om.UseETCD.SvrName, om.UseETCD.SvrType, om.UseETCD.SvrProtocol)
 		}
 	}
 	if om.UseRedis != nil {

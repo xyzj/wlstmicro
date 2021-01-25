@@ -103,7 +103,7 @@ func NewETCDClient(svrName, svrType, svrProtocol string) bool {
 	}
 	etcdClient.Register(svrName, a, b, svrType, svrProtocol)
 	// 获取服务列表信息
-	etcdClient.Watcher()
+	// etcdClient.Watcher()
 	return true
 }
 

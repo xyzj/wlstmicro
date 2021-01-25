@@ -19,7 +19,7 @@ var (
 	// logLevel 日志等级，可选项10,20,30,40
 	logLevel = flag.Int("loglevel", 20, "set the file log level. Enable value is: 10,20,30,40; 0-disable file log; -1-disable all log")
 	// logDays 日志文件保留天数，默认15
-	logDays = flag.Int("logdays", 15, "set the max days of the log files to keep")
+	logDays = flag.Int("logdays", 10, "set the max days of the log files to keep")
 	// webPort 主端口
 	webPort = flag.Int("http", 6819, "set http port to listen on.")
 	// ca文件夹路径
@@ -151,7 +151,7 @@ type WMFrameWorkV2 struct {
 	rootPathRedis string
 	rootPathMQ    string
 	gpsTimer      int64 // 启用gps校时,0-不启用，1-启用（30～900s内进行矫正），2-强制对时
-	httpProtocol string
+	httpProtocol  string
 	// tls配置
 	baseCAPath string
 	tlsCert    string //  = filepath.Join(baseCAPath, "client-cert.pem")
