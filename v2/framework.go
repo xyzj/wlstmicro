@@ -253,7 +253,7 @@ func (fw *WMFrameWorkV2) loadConfigure(f string) {
 	// 最大idle连接保持数量
 	var trMaxidle = 0
 	// 每个host允许的最大连接数
-	var trMaxconnPerHost = 500
+	var trMaxconnPerHost = 700
 	s, err := fw.wmConf.GetItem("tr_timeo")
 	if err == nil {
 		if gopsu.String2Int(s, 10) > 2 {
@@ -386,6 +386,11 @@ func (fw *WMFrameWorkV2) SetServerName(s string) {
 // SetLoggerMark 设置日志文件标识
 func (fw *WMFrameWorkV2) SetLoggerMark(s string) {
 	fw.loggerMark = s
+}
+
+// SetHTTPTimeout 设置http超时
+func (fw *WMFrameWorkV2) SetHTTPTimeout(second int) {
+	fw.httpClientPool.Timeout = time.Second * time.Duration(second)
 }
 
 // Debug 返回是否debug模式
