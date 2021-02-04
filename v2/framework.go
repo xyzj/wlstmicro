@@ -358,6 +358,20 @@ func (fw *WMFrameWorkV2) ReadTCPOnline() string {
 	return ss
 }
 
+// Tag 版本标签
+func (fw *WMFrameWorkV2) Tag() string {
+	if fw.tag == "" {
+		ss := strings.Split(fw.versionInfo, "\n")
+		for _, v := range ss {
+			if strings.HasPrefix(gopsu.TrimString(v), "Version") {
+				fw.tag = gopsu.TrimString(strings.Split(v, ":")[1])
+				break
+			}
+		}
+	}
+	return fw.tag
+}
+
 // VersionInfo 获取版本信息
 func (fw *WMFrameWorkV2) VersionInfo() string {
 	return fw.versionInfo

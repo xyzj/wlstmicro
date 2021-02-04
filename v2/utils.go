@@ -146,6 +146,7 @@ type WMFrameWorkV2 struct {
 	serverName    string
 	loggerMark    string
 	versionInfo   string
+	tag           string
 	tokenLife     time.Duration
 	rootPath      string
 	rootPathRedis string
