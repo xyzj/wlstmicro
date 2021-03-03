@@ -94,6 +94,7 @@ func (fw *WMFrameWorkV2) NewHTTPEngine(f ...gin.HandlerFunc) *gin.Engine {
 	r.GET("/whoami", func(c *gin.Context) {
 		c.String(200, c.ClientIP())
 	})
+	r.GET("/devquotes", ginmiddleware.Page500)
 	r.GET("/health", ginmiddleware.PageDefault)
 	r.GET("/clearlog", ginmiddleware.CheckRequired("name"), ginmiddleware.Clearlog)
 	r.GET("/runtime", ginmiddleware.PageRuntime)
