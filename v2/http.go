@@ -3,6 +3,7 @@ package wmv2
 import (
 	"bytes"
 	"fmt"
+	"html/template"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -97,6 +98,22 @@ func (fw *WMFrameWorkV2) NewHTTPEngine(f ...gin.HandlerFunc) *gin.Engine {
 	r.GET("/clearlog", ginmiddleware.CheckRequired("name"), ginmiddleware.Clearlog)
 	r.GET("/runtime", ginmiddleware.PageRuntime)
 	r.POST("/runtime", ginmiddleware.PageRuntime)
+	r.GET("/viewconfig", func(c *gin.Context) {
+		configInfo := make(map[string]interface{})
+		configInfo["timer"] = time.Now().Format("2006-01-02 15:04:05 Mon")
+		configInfo["key"] = "服务配置信息"
+		b, _ := ioutil.ReadFile(fw.wmConf.FullPath())
+		configInfo["value"] = strings.Split(string(b), "\n")
+		c.Header("Content-Type", "text/html")
+		t, _ := template.New("viewconfig").Parse(ginmiddleware.GetTemplateRuntime())
+		h := render.HTML{
+			Name:     "viewconfig",
+			Data:     configInfo,
+			Template: t,
+		}
+		h.WriteContentType(c.Writer)
+		h.Render(c.Writer)
+	})
 	r.Static("/static", gopsu.JoinPathFromHere("static"))
 	// apirecord
 	r.GET("/apirecord/:switch", apidoc)
