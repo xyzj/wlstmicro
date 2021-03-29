@@ -14,7 +14,6 @@ import (
 	"github.com/gin-contrib/cors"
 	gingzip "github.com/gin-contrib/gzip"
 
-	// "github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/render"
 	"github.com/tidwall/gjson"
@@ -28,7 +27,6 @@ import (
 var (
 	apidocPath = "docs/apidoc.html"
 	yaagConfig *yaag.Config
-	yaagEnable bool
 )
 
 func apidoc(c *gin.Context) {

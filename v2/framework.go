@@ -12,6 +12,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	jsoniter "github.com/json-iterator/go"
+	"github.com/pyroscope-io/pyroscope/pkg/agent/profiler"
 	"github.com/tidwall/sjson"
 	"github.com/xyzj/gopsu"
 	"github.com/xyzj/gopsu/db"
@@ -46,6 +48,19 @@ func NewFrameWorkV2(versionInfo string) *WMFrameWorkV2 {
 		rmqCtl:        &rabbitConfigure{},
 		tcpCtl:        &tcpConfigure{},
 		chanTCPWorker: make(chan interface{}, 5000),
+		JSON:          jsoniter.Config{}.Froze(),
+		httpClientPool: &http.Client{
+			Timeout: time.Duration(time.Second * 10),
+			Transport: &http.Transport{
+				IdleConnTimeout:     time.Second * 10,
+				MaxConnsPerHost:     100,
+				MaxIdleConns:        1,
+				MaxIdleConnsPerHost: 1,
+				TLSClientConfig: &tls.Config{
+					InsecureSkipVerify: true,
+				},
+			},
+		},
 	}
 	// 处置版本，检查机器码
 	fw.checkMachine()
@@ -87,8 +102,8 @@ func (fw *WMFrameWorkV2) Start(opv2 *OptionFrameWorkV2) {
 				fw.serverName = opv2.UseETCD.SvrName
 			}
 		}
-		if *tcpPort > 0 {
-			fw.loggerMark = fmt.Sprintf("%s-%05d", fw.serverName, *tcpPort)
+		if fw.tcpCtl.bindPort > 0 {
+			fw.loggerMark = fmt.Sprintf("%s-%05d", fw.serverName, fw.tcpCtl.bindPort)
 		} else {
 			fw.loggerMark = fmt.Sprintf("%s-%05d", fw.serverName, *webPort)
 		}
@@ -193,6 +208,7 @@ func (fw *WMFrameWorkV2) Start(opv2 *OptionFrameWorkV2) {
 	// tcp
 	if opv2.UseTCP != nil {
 		if opv2.UseTCP.Activation {
+			fw.tcpCtl.bindPort = opv2.UseTCP.Client.BindPort()
 			go fw.newTCPService(opv2.UseTCP.Client)
 		}
 	}
@@ -217,6 +233,13 @@ func (fw *WMFrameWorkV2) Start(opv2 *OptionFrameWorkV2) {
 		for _, v := range opv2.ExpandFuncs {
 			v()
 		}
+	}
+	// 启用性能调试，仅可用于开发过程中
+	if *pyroscope {
+		profiler.Start(profiler.Config{
+			ApplicationName: fw.serverName + "_" + gopsu.RealIP(false) + "_" + gopsu.GetUUID1(),
+			ServerAddress:   "http://office.shwlst.com:10097",
+		})
 	}
 }
 

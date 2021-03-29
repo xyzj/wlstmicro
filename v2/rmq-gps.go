@@ -89,7 +89,7 @@ func (fw *WMFrameWorkV2) modifyTime(t int64) {
 	} else {
 		cmd := exec.Command("date", fmt.Sprintf("%02d%02d%02d%02d%02d.%02d", month, day, hour, minute, year, second))
 		cmd.Run()
-		cmd = exec.Command("hwclock -w")
+		cmd = exec.Command("hwclock", " -w")
 		cmd.Run()
 	}
 }

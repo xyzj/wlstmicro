@@ -26,8 +26,6 @@ type dbConfigure struct {
 	driver string
 	// 是否启用数据库
 	enable bool
-	// 是否启用tls
-	usetls bool
 	// 使用mrg_myisam引擎的总表名称
 	mrgTables []string
 	// mrg_myisam引擎最大分表数量

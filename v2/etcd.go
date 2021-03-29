@@ -27,8 +27,6 @@ type etcdConfigure struct {
 	v6 bool
 	// 对外公布注册地址
 	regAddr string
-	// 注册根路径
-	root string
 	// enable auth
 	useauth bool
 	// user

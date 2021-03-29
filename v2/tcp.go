@@ -3,12 +3,10 @@ package wmv2
 import (
 	"context"
 	"fmt"
-	"io"
 	"net"
 	"strconv"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/mohae/deepcopy"
@@ -18,16 +16,11 @@ import (
 	msgctl "github.com/xyzj/proto/msgjk"
 )
 
-var (
-	idx uint64 // socket id
-)
-
 type tcpConfigure struct {
+	bindPort          int          // 监听端口
 	tcpClientsManager *gopsu.Queue //= gopsu.NewQueue()                  // socket实例池
 	tcpClients        sync.Map     //= make(map[uint64]*TCPBase)         // 有效的socket实例字典
 	onlineSocks       string       // 在线设备的json字符串
-	readTimeout       int64        // 读取超时
-	idleTimeout       int64        // 发送闲置超时
 	mqFlag            string       // mq发送标识
 	matchOne          bool         // 是否只匹配一个
 	filterIP          bool         // 过滤ip，仅允许合法ip连接，从redis获取
@@ -55,6 +48,8 @@ type TCPBase interface {
 	Put(interface{}) error
 	// 检查状态
 	StatusCheck() string
+	// tcp 端口
+	BindPort() int
 }
 
 type illegalIP struct {
@@ -88,7 +83,7 @@ RUN:
 			locker.Done()
 		}()
 		locker.Add(1)
-		tickCheckTCP := time.Tick(time.Second * 15)
+		tickCheckTCP := time.NewTicker(time.Second * 15)
 		checkCount := 0
 		for {
 			select {
@@ -104,7 +99,7 @@ RUN:
 					// 继续找下一个
 					return true
 				})
-			case <-tickCheckTCP: // 检查状态
+			case <-tickCheckTCP.C: // 检查状态
 				var sock = 0
 				msg := &msgctl.MsgWithCtrl{
 					Head: &msgctl.Head{
@@ -119,10 +114,10 @@ RUN:
 						Dt:   time.Now().Unix(),
 					},
 					Args: &msgctl.Args{
-						Port: int32(*tcpPort),
+						Port: int32(fw.tcpCtl.bindPort),
 					},
 					Syscmds: &msgctl.SysCommands{
-						Port: int32(*tcpPort),
+						Port: int32(fw.tcpCtl.bindPort),
 					},
 				}
 				fw.tcpCtl.tcpClients.Range(func(key interface{}, value interface{}) bool {
@@ -144,7 +139,7 @@ RUN:
 				checkCount++
 				if checkCount >= 4 {
 					checkCount = 0
-					fw.WriteSystem("TCP", fmt.Sprintf("(%d) ActiveClients:%d, ClientsPool:%d", *tcpPort, sock, fw.tcpCtl.tcpClientsManager.Len()))
+					fw.WriteSystem("TCP", fmt.Sprintf("(%d) ActiveClients:%d, ClientsPool:%d", fw.tcpCtl.bindPort, sock, fw.tcpCtl.tcpClientsManager.Len()))
 				}
 			}
 		}
@@ -160,7 +155,7 @@ func (fw *WMFrameWorkV2) newTCPService(t TCPBase) {
 	fw.tcpCtl.filterIP, _ = strconv.ParseBool(fw.wmConf.GetItemDefault("filter_ip", "false", "仅允许合法ip连接"))
 	fw.wmConf.Save()
 	// 检查端口
-	if *tcpPort < 1000 || *tcpPort > 65535 {
+	if t.BindPort() < 1000 || t.BindPort() > 65535 {
 		fw.WriteError("TCP", "Forbidden port range")
 		return
 	}
@@ -180,15 +175,15 @@ func (fw *WMFrameWorkV2) newTCPService(t TCPBase) {
 
 	go fw.tcpHandler()
 
-	listener, ex := net.ListenTCP("tcp", &net.TCPAddr{IP: net.ParseIP(""), Port: *tcpPort, Zone: ""})
+	listener, ex := net.ListenTCP("tcp", &net.TCPAddr{IP: net.ParseIP(""), Port: t.BindPort(), Zone: ""})
 	if ex != nil {
-		fw.WriteError("TCP", fmt.Sprintf("%s", ex.Error()))
+		fw.WriteError("TCP", ex.Error())
 		return
 	}
-	fw.WriteSystem("TCP", fmt.Sprintf("Success bind on port %d", *tcpPort))
+	fw.WriteSystem("TCP", fmt.Sprintf("Success bind on port %d", t.BindPort()))
 	defer func() {
 		if ex := recover(); ex != nil {
-			fw.WriteError("TCP", fmt.Sprintf("TCP listener(%d) crash, NEED RESTART: %+v", *tcpPort, errors.WithStack(ex.(error))))
+			fw.WriteError("TCP", fmt.Sprintf("TCP listener(%d) crash, NEED RESTART: %+v", t.BindPort(), errors.WithStack(ex.(error))))
 		}
 		listener.Close()
 	}()
@@ -202,11 +197,11 @@ func (fw *WMFrameWorkV2) newTCPService(t TCPBase) {
 		if fw.tcpCtl.filterIP {
 			if !ipList.Check(strings.Split(conn.RemoteAddr().String(), ":")[0]) {
 				conn.Close()
-				fw.WriteWarning("TCP "+conn.RemoteAddr().String(), fmt.Sprintf("Illegal connection to %d, KICK OUT", *tcpPort))
+				fw.WriteWarning("TCP "+conn.RemoteAddr().String(), fmt.Sprintf("Illegal connection to %d, KICK OUT", t.BindPort()))
 				continue
 			}
 		}
-		fw.WriteWarning("TCP "+conn.RemoteAddr().String(), fmt.Sprintf("Connect to %d", *tcpPort))
+		fw.WriteWarning("TCP "+conn.RemoteAddr().String(), fmt.Sprintf("Connect to %d", t.BindPort()))
 		var cli TCPBase
 		if a := fw.tcpCtl.tcpClientsManager.Get(); a != nil {
 			cli = a.(TCPBase)
@@ -257,84 +252,4 @@ func (fw *WMFrameWorkV2) newTCPService(t TCPBase) {
 			sockLocker.Wait()
 		}(cli, conn)
 	}
-}
-
-type tcpEcho struct {
-	conn       *net.TCPConn
-	cliID      uint64
-	closed     bool
-	sendQueue  *gopsu.Queue
-	readBuffer []byte
-	logHead    string
-}
-
-func (t *tcpEcho) New() {
-	t.cliID = atomic.AddUint64(&idx, 1)
-	t.sendQueue = gopsu.NewQueue()
-	t.readBuffer = make([]byte, 8192)
-}
-func (t *tcpEcho) Clean() {
-	t.cliID = 0
-	t.sendQueue.Clear()
-	t.conn.Close()
-}
-func (t *tcpEcho) Put(d interface{}) error {
-	t.sendQueue.Put(d)
-	return nil
-}
-func (t *tcpEcho) Send(context.Context) {
-	for {
-		if t.closed {
-			break
-		}
-		if a := t.sendQueue.Get(); a != nil {
-			t.conn.Write(a.([]byte))
-			println("Snd:" + string(a.([]byte)))
-		}
-		time.Sleep(time.Millisecond * 200)
-	}
-}
-func (t *tcpEcho) Recv() {
-	for {
-		if t.closed {
-			break
-		}
-		if ex := t.conn.SetReadDeadline(time.Now().Add(time.Second * 60)); ex != nil {
-			t.Disconnect("set read timeout error:" + ex.Error())
-			break
-		}
-		n, ex := t.conn.Read(t.readBuffer)
-		if ex != nil {
-			if ex == io.EOF {
-				t.Disconnect("remote close:" + ex.Error())
-			} else {
-				t.Disconnect("RcvErr:" + ex.Error())
-			}
-			break
-		}
-		if n > 0 {
-			d := t.readBuffer[:n]
-			println("Rcv:" + string(d))
-			t.Put(d)
-		}
-	}
-}
-func (t *tcpEcho) Connect(conn *net.TCPConn) error {
-	t.conn = conn
-	t.logHead = fmt.Sprintf("(%s)-%d ", t.conn.RemoteAddr().String(), t.cliID)
-	return nil
-}
-func (t *tcpEcho) Disconnect(why string) {
-	t.conn.Close()
-	t.closed = true
-	println("client close: " + why)
-}
-func (t *tcpEcho) ID() uint64 {
-	return t.cliID
-}
-func (t *tcpEcho) StatusCheck() string {
-	return "ok"
-}
-func (t *tcpEcho) RemoteAddr() string {
-	return t.conn.RemoteAddr().String()
 }

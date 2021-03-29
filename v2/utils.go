@@ -7,11 +7,14 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	jsoniter "github.com/json-iterator/go"
 	"github.com/xyzj/gopsu"
 )
 
 // 启动参数
 var (
+	// pyroscope debug
+	pyroscope = flag.Bool("pyroscope", false, "set true to enable pyroscope debug, should only be used in DEV-LAN")
 	// forceHTTP 强制http
 	forceHTTP = flag.Bool("forcehttp", false, "set true to use HTTP anyway.")
 	//  是否启用调试模式
@@ -32,8 +35,6 @@ var (
 	ver = flag.Bool("version", false, "print version info and exit.")
 	// 帮助信息
 	help = flag.Bool("help", false, "print help message and exit.")
-	// tcp 端口
-	tcpPort = flag.Int("tcp", 0, "set tcp port to listen on.")
 )
 
 var (
@@ -173,6 +174,7 @@ type WMFrameWorkV2 struct {
 	rmqCtl         *rabbitConfigure
 	tcpCtl         *tcpConfigure
 	httpClientPool *http.Client
+	JSON           jsoniter.API
 }
 
 func init() {
