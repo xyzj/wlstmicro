@@ -2,6 +2,7 @@ package wmv2
 
 import (
 	"bytes"
+	"embed"
 	"fmt"
 	"html/template"
 	"io/ioutil"
@@ -23,6 +24,9 @@ import (
 	yaaggin "github.com/xyzj/yaag/gin"
 	"github.com/xyzj/yaag/yaag"
 )
+
+//go:embed yaag
+var apirec embed.FS
 
 var (
 	apidocPath = "docs/apidoc.html"
@@ -115,6 +119,7 @@ func (fw *WMFrameWorkV2) NewHTTPEngine(f ...gin.HandlerFunc) *gin.Engine {
 	})
 	r.Static("/static", gopsu.JoinPathFromHere("static"))
 	// apirecord
+	r.StaticFS("/apirec", http.FS(apirec))
 	r.GET("/apirecord/:switch", apidoc)
 	// 生成api访问文档
 	apidocPath = gopsu.JoinPathFromHere("docs", "apirecord-"+fw.serverName+".html")
@@ -132,12 +137,8 @@ func (fw *WMFrameWorkV2) NewHTTPEngine(f ...gin.HandlerFunc) *gin.Engine {
 	yaag.Init(yaagConfig)
 	r.Use(yaaggin.Document())
 	// have fun
-	r.GET("/game", game.GameGroup)
+	// r.GET("/game", game.GameGroup)
 	r.GET("/game/:game", game.GameGroup)
-	// if *debug {
-	// 	// 调试
-	// 	pprof.Register(r)
-	// }
 	return r
 }
 
