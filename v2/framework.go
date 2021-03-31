@@ -2,6 +2,7 @@ package wmv2
 
 import (
 	"crypto/tls"
+	_ "embed"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -20,6 +21,15 @@ import (
 	ginmiddleware "github.com/xyzj/gopsu/gin-middleware"
 	msgctl "github.com/xyzj/proto/msgjk"
 )
+
+//go:embed ca/ca.pem
+var ca []byte
+
+//go:embed ca/localhost.pem
+var caCert []byte
+
+//go:embed ca/localhost-key.pem
+var caKey []byte
 
 // NewFrameWorkV2 初始化一个新的framework
 func NewFrameWorkV2(versionInfo string) *WMFrameWorkV2 {
@@ -84,11 +94,20 @@ func NewFrameWorkV2(versionInfo string) *WMFrameWorkV2 {
 	if *capath != "" {
 		fw.baseCAPath = *capath
 	}
-	fw.tlsCert = filepath.Join(fw.baseCAPath, "client-cert.pem")
-	fw.tlsKey = filepath.Join(fw.baseCAPath, "client-key.pem")
-	fw.tlsRoot = filepath.Join(fw.baseCAPath, "rootca.pem")
-	fw.httpCert = filepath.Join(fw.baseCAPath, "client-cert.pem")
-	fw.httpKey = filepath.Join(fw.baseCAPath, "client-key.pem")
+	fw.tlsCert = filepath.Join(fw.baseCAPath, "localhost.pem")
+	fw.tlsKey = filepath.Join(fw.baseCAPath, "localhost-key.pem")
+	fw.tlsRoot = filepath.Join(fw.baseCAPath, "ca.pem")
+	fw.httpCert = filepath.Join(fw.baseCAPath, "localhost.pem")
+	fw.httpKey = filepath.Join(fw.baseCAPath, "localhost-key.pem")
+	if !gopsu.IsExist(fw.tlsRoot) {
+		ioutil.WriteFile(fw.tlsRoot, ca, 0644)
+	}
+	if !gopsu.IsExist(fw.tlsCert) {
+		ioutil.WriteFile(fw.tlsCert, caCert, 0644)
+	}
+	if !gopsu.IsExist(fw.tlsKey) {
+		ioutil.WriteFile(fw.tlsKey, caKey, 0644)
+	}
 	return fw
 }
 
