@@ -159,6 +159,7 @@ func (fw *WMFrameWorkV2) newTCPService(t TCPBase) {
 		fw.WriteError("TCP", "Forbidden port range")
 		return
 	}
+	fw.tcpCtl.bindPort = t.BindPort()
 	// 处理合法ip
 	var ipList = &illegalIP{}
 	if fw.tcpCtl.filterIP { // 查询合法ip
