@@ -28,7 +28,7 @@ func machineCode() string {
 		}
 		b.WriteString(inter.HardwareAddr.String())
 	}
-	return strings.ReplaceAll(base64.StdEncoding.EncodeToString(gopsu.CompressData(b.Bytes(), gopsu.ArchiveSnappy))[3:], "=", "")
+	return strings.ReplaceAll(base64.StdEncoding.EncodeToString(gopsu.CompressData(b.Bytes(), gopsu.ArchiveGZip))[3:], "=", "")
 }
 
 func (fw *WMFrameWorkV2) checkMachine() {
