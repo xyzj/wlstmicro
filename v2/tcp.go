@@ -48,8 +48,6 @@ type TCPBase interface {
 	Put(interface{}) error
 	// 检查状态
 	StatusCheck() string
-	// tcp 端口
-	BindPort() int
 }
 
 type illegalIP struct {
@@ -155,11 +153,10 @@ func (fw *WMFrameWorkV2) newTCPService(t TCPBase) {
 	fw.tcpCtl.filterIP, _ = strconv.ParseBool(fw.wmConf.GetItemDefault("filter_ip", "false", "仅允许合法ip连接"))
 	fw.wmConf.Save()
 	// 检查端口
-	if t.BindPort() < 1000 || t.BindPort() > 65535 {
+	if fw.tcpCtl.bindPort < 1000 || fw.tcpCtl.bindPort > 65535 {
 		fw.WriteError("TCP", "Forbidden port range")
 		return
 	}
-	fw.tcpCtl.bindPort = t.BindPort()
 	// 处理合法ip
 	var ipList = &illegalIP{}
 	if fw.tcpCtl.filterIP { // 查询合法ip
@@ -176,15 +173,15 @@ func (fw *WMFrameWorkV2) newTCPService(t TCPBase) {
 
 	go fw.tcpHandler()
 
-	listener, ex := net.ListenTCP("tcp", &net.TCPAddr{IP: net.ParseIP(""), Port: t.BindPort(), Zone: ""})
+	listener, ex := net.ListenTCP("tcp", &net.TCPAddr{IP: net.ParseIP(""), Port: fw.tcpCtl.bindPort, Zone: ""})
 	if ex != nil {
 		fw.WriteError("TCP", ex.Error())
 		return
 	}
-	fw.WriteSystem("TCP", fmt.Sprintf("Success bind on port %d", t.BindPort()))
+	fw.WriteSystem("TCP", fmt.Sprintf("Success bind on port %d", fw.tcpCtl.bindPort))
 	defer func() {
 		if ex := recover(); ex != nil {
-			fw.WriteError("TCP", fmt.Sprintf("TCP listener(%d) crash, NEED RESTART: %+v", t.BindPort(), errors.WithStack(ex.(error))))
+			fw.WriteError("TCP", fmt.Sprintf("TCP listener(%d) crash, NEED RESTART: %+v", fw.tcpCtl.bindPort, errors.WithStack(ex.(error))))
 		}
 		listener.Close()
 	}()
@@ -198,11 +195,11 @@ func (fw *WMFrameWorkV2) newTCPService(t TCPBase) {
 		if fw.tcpCtl.filterIP {
 			if !ipList.Check(strings.Split(conn.RemoteAddr().String(), ":")[0]) {
 				conn.Close()
-				fw.WriteWarning("TCP "+conn.RemoteAddr().String(), fmt.Sprintf("Illegal connection to %d, KICK OUT", t.BindPort()))
+				fw.WriteWarning("TCP "+conn.RemoteAddr().String(), fmt.Sprintf("Illegal connection to %d, KICK OUT", fw.tcpCtl.bindPort))
 				continue
 			}
 		}
-		fw.WriteWarning("TCP "+conn.RemoteAddr().String(), fmt.Sprintf("Connect to %d", t.BindPort()))
+		fw.WriteWarning("TCP "+conn.RemoteAddr().String(), fmt.Sprintf("Connect to %d", fw.tcpCtl.bindPort))
 		var cli TCPBase
 		if a := fw.tcpCtl.tcpClientsManager.Get(); a != nil {
 			cli = a.(TCPBase)

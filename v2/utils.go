@@ -106,6 +106,8 @@ type OptionHTTP struct {
 type OptionTCP struct {
 	// 启用
 	Activation bool
+	// 端口
+	BindPort int
 	// client 接口实现
 	Client TCPBase
 }

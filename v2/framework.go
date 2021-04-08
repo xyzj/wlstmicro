@@ -227,7 +227,7 @@ func (fw *WMFrameWorkV2) Start(opv2 *OptionFrameWorkV2) {
 	// tcp
 	if opv2.UseTCP != nil {
 		if opv2.UseTCP.Activation {
-			fw.tcpCtl.bindPort = opv2.UseTCP.Client.BindPort()
+			fw.tcpCtl.bindPort = opv2.UseTCP.BindPort
 			go fw.newTCPService(opv2.UseTCP.Client)
 		}
 	}
