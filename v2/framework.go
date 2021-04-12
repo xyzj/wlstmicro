@@ -44,6 +44,9 @@ func NewFrameWorkV2(versionInfo string) *WMFrameWorkV2 {
 		println(versionInfo)
 		os.Exit(1)
 	}
+	if *logLevel <= 0 {
+		*logDays = 0
+	}
 	// 初始化
 	fw := &WMFrameWorkV2{
 		rootPath:      "wlst-micro",
@@ -127,14 +130,7 @@ func (fw *WMFrameWorkV2) Start(opv2 *OptionFrameWorkV2) {
 			fw.loggerMark = fmt.Sprintf("%s-%05d", fw.serverName, *webPort)
 		}
 	}
-	switch *logLevel {
-	case -1:
-		fw.wmLog = &gopsu.NilLogger{}
-	case 0:
-		fw.wmLog = &gopsu.StdLogger{}
-	default:
-		fw.wmLog = gopsu.NewLogger(gopsu.DefaultLogDir, fw.loggerMark+".core", *logLevel, *logDays)
-	}
+	fw.wmLog = gopsu.NewLogger(gopsu.DefaultLogDir, fw.loggerMark+".core", *logLevel, *logDays)
 	if opv2.ConfigFile == "" {
 		opv2.ConfigFile = *conf
 	}
