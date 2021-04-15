@@ -44,9 +44,6 @@ func NewFrameWorkV2(versionInfo string) *WMFrameWorkV2 {
 		println(versionInfo)
 		os.Exit(1)
 	}
-	if *logLevel <= 0 {
-		*logDays = 0
-	}
 	// 初始化
 	fw := &WMFrameWorkV2{
 		rootPath:      "wlst-micro",
@@ -63,7 +60,7 @@ func NewFrameWorkV2(versionInfo string) *WMFrameWorkV2 {
 		chanTCPWorker: make(chan interface{}, 5000),
 		JSON:          jsoniter.Config{}.Froze(),
 		httpClientPool: &http.Client{
-			Timeout: time.Duration(time.Second * 10),
+			Timeout: time.Duration(time.Second * 60),
 			Transport: &http.Transport{
 				IdleConnTimeout:     time.Second * 10,
 				MaxConnsPerHost:     100,
@@ -92,10 +89,16 @@ func NewFrameWorkV2(versionInfo string) *WMFrameWorkV2 {
 	if *debug {
 		*logLevel = 10
 	}
+	if *logLevel <= 1 {
+		*logDays = *logLevel
+	}
 	// 设置基础路径
 	fw.baseCAPath = filepath.Join(gopsu.DefaultConfDir, "ca")
 	if *capath != "" {
 		fw.baseCAPath = *capath
+	}
+	if !gopsu.IsExist(fw.baseCAPath) {
+		os.MkdirAll(fw.baseCAPath, 0755)
 	}
 	fw.tlsCert = filepath.Join(fw.baseCAPath, "localhost.pem")
 	fw.tlsKey = filepath.Join(fw.baseCAPath, "localhost-key.pem")
@@ -285,33 +288,28 @@ func (fw *WMFrameWorkV2) loadConfigure(f string) {
 		fw.httpCert = filepath.Join(fw.baseCAPath, domainName+".crt")
 		fw.httpKey = filepath.Join(fw.baseCAPath, domainName+".key")
 	}
-	// 以下三个参数不自动生成，影响dorequest性能
-	// request超时时间（秒）
+	// 以下参数不自动生成，影响dorequest性能
 	var trTimeo = time.Second * 60
-	// 最大idle连接保持数量
-	var trMaxidle = 0
-	// 每个host允许的最大连接数
-	var trMaxconnPerHost = 700
+	var trMaxconnPerHost int
 	s, err := fw.wmConf.GetItem("tr_timeo")
 	if err == nil {
 		if gopsu.String2Int(s, 10) > 2 {
 			trTimeo = time.Second * time.Duration(gopsu.String2Int(s, 10))
 		}
 	}
-	s, err = fw.wmConf.GetItem("tr_maxidle")
-	if err == nil {
-		trMaxidle = gopsu.String2Int(s, 10)
-	}
 	s, err = fw.wmConf.GetItem("tr_maxconn_perhost")
 	if err == nil {
 		trMaxconnPerHost = gopsu.String2Int(s, 10)
+	}
+	if !(trMaxconnPerHost < 1 || trMaxconnPerHost > 2000) {
+		trMaxconnPerHost = 100
 	}
 	fw.httpClientPool = &http.Client{
 		Timeout: time.Duration(trTimeo),
 		Transport: &http.Transport{
 			IdleConnTimeout:     time.Second * 10,
 			MaxConnsPerHost:     trMaxconnPerHost,
-			MaxIdleConns:        trMaxidle,
+			MaxIdleConns:        1,
 			MaxIdleConnsPerHost: 1,
 			TLSClientConfig: &tls.Config{
 				InsecureSkipVerify: true,

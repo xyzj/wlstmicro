@@ -78,7 +78,7 @@ func (fw *WMFrameWorkV2) NewHTTPEngine(f ...gin.HandlerFunc) *gin.Engine {
 	r.Use(gingzip.Gzip(9))
 	// 日志
 	logName := ""
-	if *logLevel > 0 {
+	if *logLevel > 1 {
 		logName = fw.loggerMark + ".http"
 	}
 	r.Use(ginmiddleware.LoggerWithRolling(gopsu.DefaultLogDir, logName, *logDays))
