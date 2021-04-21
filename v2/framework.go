@@ -259,6 +259,7 @@ func (fw *WMFrameWorkV2) Start(opv2 *OptionFrameWorkV2) {
 			ServerAddress:   "http://office.shwlst.com:10097",
 		})
 	}
+	fw.WriteSystem("", "Service start:"+fw.versionInfo)
 }
 
 // Run 运行框架

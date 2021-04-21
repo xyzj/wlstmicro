@@ -8,6 +8,10 @@ import (
 	"github.com/xyzj/gopsu"
 )
 
+var (
+	logReplaceDefault = strings.NewReplacer("\t", "", "\r", "", "\n", " ")
+)
+
 // WriteDebug debug日志
 func (fw *WMFrameWorkV2) WriteDebug(name, msg string) {
 	fw.WriteLog(name, msg, 10)
@@ -38,13 +42,13 @@ func (fw *WMFrameWorkV2) WriteSystem(name, msg string) {
 // msg： 日志信息
 // level： 日志级别10,20，30,40,90
 func (fw *WMFrameWorkV2) WriteLog(name, msg string, level int) {
-	if level == -1 || level < *logLevel {
+	if level <= 0 || level < *logLevel {
 		return
 	}
 	if name != "" {
 		name = "[" + name + "] "
 	}
-	msg = gopsu.TrimString(msg)
+	msg = logReplaceDefault.Replace(msg)
 	switch level {
 	case 10:
 		fw.wmLog.Debug(fmt.Sprintf("%s%s", name, msg))
@@ -67,14 +71,14 @@ type StdLogger struct {
 }
 
 func (l *StdLogger) writeLog(name, msg string, level int) {
-	if level == -1 || level < *logLevel {
+	if level <= 0 || level < *logLevel {
 		return
 	}
 	if name != "" {
 		name = "[" + name + "] "
 	}
 	if l.LogReplacer != nil {
-		msg = l.LogReplacer.Replace(gopsu.TrimString(msg))
+		msg = l.LogReplacer.Replace(strings.TrimSpace(logReplaceDefault.Replace(msg)))
 	}
 	switch level {
 	case 10:
