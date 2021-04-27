@@ -3,6 +3,7 @@ package wmv2
 import (
 	"bytes"
 	"embed"
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"io/ioutil"
@@ -31,6 +32,7 @@ var apirec embed.FS
 var (
 	apidocPath = "docs/apidoc.html"
 	yaagConfig *yaag.Config
+	rever      = strings.NewReplacer("{\n", "", "}", "", `"`, "", ",", "")
 )
 
 func apidoc(c *gin.Context) {
@@ -99,10 +101,11 @@ func (fw *WMFrameWorkV2) NewHTTPEngine(f ...gin.HandlerFunc) *gin.Engine {
 	r.GET("/devquotes", ginmiddleware.Page500)
 	r.GET("/health", ginmiddleware.PageDefault)
 	r.GET("/clearlog", ginmiddleware.CheckRequired("name"), ginmiddleware.Clearlog)
-	r.GET("/runtime", ginmiddleware.PageRuntime)
-	r.POST("/runtime", ginmiddleware.PageRuntime)
+	r.GET("/status", fw.pageStatus)
+	r.POST("/status", fw.pageStatus)
 	r.GET("/viewconfig", func(c *gin.Context) {
 		configInfo := make(map[string]interface{})
+		configInfo["startat"] = fw.startAt
 		configInfo["timer"] = time.Now().Format("2006-01-02 15:04:05 Mon")
 		configInfo["key"] = "服务配置信息"
 		b, _ := ioutil.ReadFile(fw.wmConf.FullPath())
@@ -215,6 +218,33 @@ func (fw *WMFrameWorkV2) DoRequest(req *http.Request, logdetail ...string) (int,
 	sc := resp.StatusCode
 	fw.WriteLog("HTTP FWD", fmt.Sprintf("%s response %d from %s|%v", req.Method, sc, req.URL.String(), b.String()), level)
 	return sc, b.Bytes(), h, nil
+}
+
+func (fw *WMFrameWorkV2) pageStatus(c *gin.Context) {
+	var statusInfo = make(map[string]interface{})
+	statusInfo["startat"] = fw.startAt
+	statusInfo["timer"] = time.Now().Format("2006-01-02 15:04:05 Mon")
+	statusInfo["key"] = "服务运行信息"
+	fmtver, _ := json.MarshalIndent(gjson.Parse(fw.verJSON).Value(), "", "")
+	statusInfo["value"] = strings.Split(rever.Replace(string(fmtver)), "\n")
+	switch c.Request.Method {
+	case "GET":
+		c.Header("Content-Type", "text/html")
+		t, _ := template.New("runtime").Parse(ginmiddleware.GetTemplateRuntime())
+		h := render.HTML{
+			Name:     "runtime",
+			Data:     statusInfo,
+			Template: t,
+		}
+		h.WriteContentType(c.Writer)
+		h.Render(c.Writer)
+	case "POST":
+		c.Set("server_time", statusInfo["timer"].(string))
+		c.Set("start_at", statusInfo["startat"].(string))
+		c.Set("ver", gjson.Parse(fw.verJSON).Value())
+		c.Set("conf", gjson.Parse(fw.wmConf.GetAll()).Value())
+		c.PureJSON(200, c.Keys)
+	}
 }
 
 // PrepareToken 获取User-Token信息

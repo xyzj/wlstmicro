@@ -148,8 +148,9 @@ type WMFrameWorkV2 struct {
 	// 变量类
 	serverName    string
 	loggerMark    string
-	versionInfo   string
+	verJSON       string
 	tag           string
+	startAt       string
 	tokenLife     time.Duration
 	rootPath      string
 	rootPathRedis string

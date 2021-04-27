@@ -3,6 +3,7 @@ package wmv2
 import (
 	"crypto/tls"
 	_ "embed"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -12,13 +13,14 @@ import (
 	"strings"
 	"time"
 
+	"github.com/tidwall/gjson"
+
 	"github.com/gin-gonic/gin"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/pyroscope-io/pyroscope/pkg/agent/profiler"
 	"github.com/tidwall/sjson"
 	"github.com/xyzj/gopsu"
 	"github.com/xyzj/gopsu/db"
-	ginmiddleware "github.com/xyzj/gopsu/gin-middleware"
 	msgctl "github.com/xyzj/proto/msgjk"
 )
 
@@ -40,8 +42,9 @@ func NewFrameWorkV2(versionInfo string) *WMFrameWorkV2 {
 		flag.PrintDefaults()
 		os.Exit(1)
 	}
+	fmtver, _ := json.MarshalIndent(gjson.Parse(versionInfo).Value(), "", "  ")
 	if *ver {
-		println(versionInfo)
+		println(string(fmtver))
 		os.Exit(1)
 	}
 	// 初始化
@@ -51,7 +54,8 @@ func NewFrameWorkV2(versionInfo string) *WMFrameWorkV2 {
 		wmConf:        &gopsu.ConfData{},
 		wmLog:         &gopsu.StdLogger{},
 		serverName:    "X",
-		versionInfo:   versionInfo,
+		startAt:       time.Now().Format("2006-01-02 15:04:05 Mon"),
+		verJSON:       versionInfo,
 		etcdCtl:       &etcdConfigure{},
 		redisCtl:      &redisConfigure{},
 		dbCtl:         &dbConfigure{},
@@ -76,9 +80,9 @@ func NewFrameWorkV2(versionInfo string) *WMFrameWorkV2 {
 	fw.checkMachine()
 	// 写版本信息
 	p, _ := os.Executable()
-	f, _ := os.OpenFile(fmt.Sprintf("%s.ver", p), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0444)
+	f, _ := os.OpenFile(p+".ver", os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0644)
 	defer f.Close()
-	f.WriteString(versionInfo)
+	f.Write(fmtver)
 	// 处置目录
 	if *portable {
 		gopsu.DefaultConfDir, gopsu.DefaultLogDir, gopsu.DefaultCacheDir = gopsu.MakeRuntimeDirs(".")
@@ -233,7 +237,6 @@ func (fw *WMFrameWorkV2) Start(opv2 *OptionFrameWorkV2) {
 	// gin http
 	if opv2.UseHTTP != nil {
 		if opv2.UseHTTP.Activation {
-			ginmiddleware.SetVersionInfo(fw.versionInfo)
 			if opv2.UseHTTP.EngineFunc == nil {
 				opv2.UseHTTP.EngineFunc = func() *gin.Engine {
 					return fw.NewHTTPEngine()
@@ -259,7 +262,7 @@ func (fw *WMFrameWorkV2) Start(opv2 *OptionFrameWorkV2) {
 			ServerAddress:   "http://office.shwlst.com:10097",
 		})
 	}
-	fw.WriteSystem("", "Service start:"+fw.versionInfo)
+	fw.WriteSystem("", "Service start:"+fw.verJSON)
 }
 
 // Run 运行框架
@@ -379,7 +382,7 @@ func (fw *WMFrameWorkV2) ReadTCPOnline() string {
 	msg := &msgctl.MsgWithCtrl{}
 	var ss, s string
 	ss, _ = sjson.Set(ss, "timer", gopsu.Stamp2Time(time.Now().Unix()))
-	ss, _ = sjson.Set(ss, "ver", strings.Split(fw.versionInfo, "\n")[1:])
+	ss, _ = sjson.Set(ss, "ver", gjson.Parse(fw.verJSON).Value())
 	if err := gopsu.JSON2PB(fw.tcpCtl.onlineSocks, &msgctl.MsgWithCtrl{}); err == nil {
 		for _, v := range msg.Syscmds.OnlineInfo {
 			if v.PhyId > 0 {
@@ -398,20 +401,14 @@ func (fw *WMFrameWorkV2) ReadTCPOnline() string {
 // Tag 版本标签
 func (fw *WMFrameWorkV2) Tag() string {
 	if fw.tag == "" {
-		ss := strings.Split(fw.versionInfo, "\n")
-		for _, v := range ss {
-			if strings.HasPrefix(gopsu.TrimString(v), "Version") {
-				fw.tag = gopsu.TrimString(strings.Split(v, ":")[1])
-				break
-			}
-		}
+		fw.tag = gjson.Parse(fw.verJSON).Get("version").String()
 	}
 	return fw.tag
 }
 
 // VersionInfo 获取版本信息
 func (fw *WMFrameWorkV2) VersionInfo() string {
-	return fw.versionInfo
+	return fw.verJSON
 }
 
 // WebPort http 端口

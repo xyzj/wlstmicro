@@ -117,8 +117,6 @@ func NewHTTPEngine(f ...gin.HandlerFunc) *gin.Engine {
 	})
 	r.GET("/health", ginmiddleware.PageDefault)
 	r.GET("/clearlog", ginmiddleware.CheckRequired("name"), ginmiddleware.Clearlog)
-	r.GET("/runtime", ginmiddleware.PageRuntime)
-	r.POST("/runtime", ginmiddleware.PageRuntime)
 	r.Static("/static", gopsu.JoinPathFromHere("static"))
 	// apidoc
 	// r.GET("/api/:switch", serverAPI)

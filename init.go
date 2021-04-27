@@ -13,8 +13,6 @@ import (
 	"strings"
 	"time"
 
-	ginmiddleware "github.com/xyzj/gopsu/gin-middleware"
-
 	"github.com/gin-gonic/gin"
 	"github.com/xyzj/gopsu"
 )
@@ -359,9 +357,6 @@ func RunFramework(om *OptionFramework) {
 				}
 			}
 			NewHTTPService(om.UseHTTP.GinEngine)
-			if VersionInfo != "" {
-				ginmiddleware.SetVersionInfo(VersionInfo)
-			}
 		}
 	}
 	if om.UseMQProducer != nil {

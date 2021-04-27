@@ -11,6 +11,8 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/tidwall/gjson"
+
 	"github.com/xyzj/gopsu"
 )
 
@@ -34,22 +36,18 @@ func machineCode() string {
 func (fw *WMFrameWorkV2) checkMachine() {
 	defer recover()
 	mfile := filepath.Join(gopsu.GetExecDir(), ".firstrun")
-	for _, v := range strings.Split(fw.versionInfo, "\n") {
-		if strings.HasPrefix(v, "Version") {
-			ver := gopsu.TrimString(strings.Split(v, ":")[1])
-			if ver != "0.0.0" {
-				ss := strings.Split(ver, ".")
-				if ss[len(ss)-1] == "90060" { // need check machine
-					b, err := ioutil.ReadFile(mfile)
-					if err != nil {
-						println("wrong machine.")
-						os.Exit(21)
-					}
-					if gopsu.TrimString(string(b))[9:] != machineCode() {
-						println("wrong machine.")
-						os.Exit(21)
-					}
-				}
+	ver := gjson.Parse(fw.verJSON).Get("version").String()
+	if ver != "0.0.0" {
+		ss := strings.Split(ver, ".")
+		if ss[len(ss)-1] == "90060" { // need check machine
+			b, err := ioutil.ReadFile(mfile)
+			if err != nil {
+				println("wrong machine.")
+				os.Exit(21)
+			}
+			if gopsu.TrimString(string(b))[9:] != machineCode() {
+				println("wrong machine.")
+				os.Exit(21)
 			}
 		}
 	}
