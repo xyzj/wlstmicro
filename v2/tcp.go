@@ -119,8 +119,7 @@ RUN:
 					},
 				}
 				fw.tcpCtl.tcpClients.Range(func(key interface{}, value interface{}) bool {
-					v := value.(TCPBase)
-					if a := v.StatusCheck(); a != "" {
+					if a := value.(TCPBase).StatusCheck(); a != "" {
 						sock++
 						msginfo := &msgctl.SysCommands_OnlineInfo{}
 						msginfo.Unmarshal([]byte(a))

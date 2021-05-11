@@ -382,12 +382,11 @@ func (fw *WMFrameWorkV2) ReadTCPOnline() string {
 	msg := &msgctl.MsgWithCtrl{}
 	var ss, s string
 	ss, _ = sjson.Set(ss, "timer", gopsu.Stamp2Time(time.Now().Unix()))
-	ss, _ = sjson.Set(ss, "ver", gjson.Parse(fw.verJSON).Value())
-	if err := gopsu.JSON2PB(fw.tcpCtl.onlineSocks, &msgctl.MsgWithCtrl{}); err == nil {
+	if err := gopsu.JSON2PB(fw.tcpCtl.onlineSocks, msg); err == nil {
 		for _, v := range msg.Syscmds.OnlineInfo {
 			if v.PhyId > 0 {
 				s, _ = sjson.Set("", "id", v.PhyId)
-				s, _ = sjson.Set(s, "ip", gopsu.IPInt642String(v.Ip))
+				s, _ = sjson.Set(s, "ip", v.Ip)
 				s, _ = sjson.Set(s, "net", v.NetType)
 				s, _ = sjson.Set(s, "ss", v.Signal)
 				s, _ = sjson.Set(s, "imei", v.Imei)
