@@ -230,6 +230,10 @@ func (fw *WMFrameWorkV2) Start(opv2 *OptionFrameWorkV2) {
 	// tcp
 	if opv2.UseTCP != nil {
 		if opv2.UseTCP.Activation {
+			if opv2.UseTCP.MQFlag == "" {
+				opv2.UseTCP.MQFlag = "0"
+			}
+			fw.tcpCtl.mqFlag = opv2.UseTCP.MQFlag
 			fw.tcpCtl.bindPort = opv2.UseTCP.BindPort
 			go fw.newTCPService(opv2.UseTCP.Client)
 		}
@@ -413,11 +417,6 @@ func (fw *WMFrameWorkV2) VersionInfo() string {
 // WebPort http 端口
 func (fw *WMFrameWorkV2) WebPort() int {
 	return *webPort
-}
-
-// MQFlag mq标识
-func (fw *WMFrameWorkV2) MQFlag() string {
-	return fw.tcpCtl.mqFlag
 }
 
 // ServerName 服务名称

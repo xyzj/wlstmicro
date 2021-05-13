@@ -108,6 +108,8 @@ type OptionTCP struct {
 	Activation bool
 	// 端口
 	BindPort int
+	// mqflag
+	MQFlag string
 	// client 接口实现
 	Client TCPBase
 }

@@ -147,7 +147,7 @@ RUN:
 }
 
 func (fw *WMFrameWorkV2) newTCPService(t TCPBase) {
-	fw.tcpCtl.mqFlag = fw.wmConf.GetItemDefault("mq_flag", "0", "设备上下行mq消息，额外区分标识")
+	// fw.tcpCtl.mqFlag = fw.wmConf.GetItemDefault("mq_flag", "0", "设备上下行mq消息，额外区分标识")
 	fw.tcpCtl.matchOne, _ = strconv.ParseBool(fw.wmConf.GetItemDefault("match_one", "true", "发送TCP命令时是否只匹配一个目标socket"))
 	fw.tcpCtl.filterIP, _ = strconv.ParseBool(fw.wmConf.GetItemDefault("filter_ip", "false", "仅允许合法ip连接"))
 	fw.wmConf.Save()
