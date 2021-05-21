@@ -180,6 +180,7 @@ type WMFrameWorkV2 struct {
 	tcpCtl         *tcpConfigure
 	httpClientPool *http.Client
 	JSON           jsoniter.API
+	cnf            *OptionFrameWorkV2
 }
 
 func init() {

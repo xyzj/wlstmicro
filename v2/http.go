@@ -13,6 +13,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/tidwall/sjson"
+
 	"github.com/gin-contrib/cors"
 	gingzip "github.com/gin-contrib/gzip"
 
@@ -24,6 +26,80 @@ import (
 	ginmiddleware "github.com/xyzj/gopsu/gin-middleware"
 	yaaggin "github.com/xyzj/yaag/gin"
 	"github.com/xyzj/yaag/yaag"
+)
+
+const (
+	TPLHEAD = `<html lang="zh-cn">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="content-type" />
+{{template "css"}}
+</head>
+{{template "body" .}}
+</html>`
+	TPLCSS = `{{define "css"}}
+<style type="text/css">
+a {
+  color: #4183C4;
+  font-size: 16px; }
+h1, h2, h3, h4, h5, h6 {
+  margin: 20px 0 10px;
+  padding: 0;
+  font-weight: bold;
+  -webkit-font-smoothing: antialiased;
+  cursor: text;
+  position: relative; }
+h1 {
+  font-size: 28px;
+  color: black; }
+h2 {
+  font-size: 24px;
+  border-bottom: 1px solid #cccccc;
+  color: black; }
+h3 {
+  font-size: 18px; }
+h4 {
+  font-size: 16px; }
+h5 {
+  font-size: 14px; }
+h6 {
+  color: #777777;
+  font-size: 14px; }
+table {
+  padding: 0; }
+	table tr {
+	  border-top: 1px solid #cccccc;
+	  background-color: white;
+	  margin: 0;
+	  padding: 0; }
+	  table tr:nth-child(2n) {
+		background-color: #f8f8f8; }
+	  table tr th {
+		font-weight: bold;
+		border: 1px solid #cccccc;
+		text-align: center;
+		margin: 0;
+		padding: 6px 13px; }
+	  table tr td {
+		border: 1px solid #cccccc;
+		text-align: left;
+		margin: 0;
+		padding: 6px 13px; }
+	  table tr th :first-child, table tr td :first-child {
+		margin-top: 0; }
+	  table tr th :last-child, table tr td :last-child {
+		margin-bottom: 0; }
+</style>
+{{end}}`
+	TPLBODY = `{{define "body"}}
+<body>
+<h3>服务器系统时间：</h3><a>{{.timer}}</a>
+<h3>服务启动时间：</h3><a>{{.startat}}</a>
+<h3>{{.key}}：</h3><a>{{range $idx, $elem := .value}}
+{{$elem}}<br>
+{{end}}</a>
+</body>
+</html>
+{{end}}`
 )
 
 //go:embed yaag
@@ -100,6 +176,8 @@ func (fw *WMFrameWorkV2) NewHTTPEngine(f ...gin.HandlerFunc) *gin.Engine {
 	})
 	r.GET("/devquotes", ginmiddleware.Page500)
 	r.GET("/health", ginmiddleware.PageDefault)
+	r.GET("/health/mod", fw.pageModCheck)
+	r.POST("/health/mod", fw.pageModCheck)
 	r.GET("/clearlog", ginmiddleware.CheckRequired("name"), ginmiddleware.Clearlog)
 	r.GET("/status", fw.pageStatus)
 	r.POST("/status", fw.pageStatus)
@@ -111,7 +189,7 @@ func (fw *WMFrameWorkV2) NewHTTPEngine(f ...gin.HandlerFunc) *gin.Engine {
 		b, _ := ioutil.ReadFile(fw.wmConf.FullPath())
 		configInfo["value"] = strings.Split(string(b), "\n")
 		c.Header("Content-Type", "text/html")
-		t, _ := template.New("viewconfig").Parse(ginmiddleware.GetTemplateRuntime())
+		t, _ := template.New("viewconfig").Parse(TPLHEAD + TPLCSS + TPLBODY)
 		h := render.HTML{
 			Name:     "viewconfig",
 			Data:     configInfo,
@@ -197,7 +275,6 @@ func (fw *WMFrameWorkV2) DoRequest(req *http.Request, logdetail ...string) (int,
 			level = 0
 		}
 	}
-
 	// fw.WriteLog("HTTP", fmt.Sprintf("%s request to %s|%s", req.Method, req.URL.String(), strings.Join(logdetail, ",")), 10)
 	resp, err := fw.httpClientPool.Do(req)
 	if err != nil {
@@ -205,19 +282,126 @@ func (fw *WMFrameWorkV2) DoRequest(req *http.Request, logdetail ...string) (int,
 		return 502, nil, nil, err
 	}
 	defer resp.Body.Close()
-	var b bytes.Buffer
-	_, err = b.ReadFrom(resp.Body)
+	b, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		fw.WriteError("HTTP FWD", "read body error: "+err.Error())
 		return 502, nil, nil, err
 	}
 	h := make(map[string]string)
+	h["resp_from"] = req.Host
 	for k := range resp.Header {
 		h[k] = resp.Header.Get(k)
 	}
 	sc := resp.StatusCode
-	fw.WriteLog("HTTP FWD", fmt.Sprintf("%s response %d from %s|%v", req.Method, sc, req.URL.String(), b.String()), level)
-	return sc, b.Bytes(), h, nil
+	fw.WriteLog("HTTP FWD", fmt.Sprintf("%s response %d from %s|%v", req.Method, sc, req.URL.String(), string(b)), level)
+	return sc, b, h, nil
+}
+
+func (fw *WMFrameWorkV2) pageModCheck(c *gin.Context) {
+	var tbody = `{{define "body"}}
+<body>
+<h3>服务器时间：</h3><a>{{.timer}}</a>
+<h3>服务模块状态：</h3>
+<table>
+<thead>
+<tr>
+<th>启用的模块</th>
+<th>模块状态</th>
+</tr>
+</thead>
+<tbody>
+	{{range $idx, $elem := .clients}}
+	<tr>
+		{{range $key,$value:=$elem}}
+			<td>{{$value}}</td>
+		{{end}}
+	</tr>
+	{{end}}
+</tbody>
+</table>
+</body>
+{{end}}`
+	var serviceCheck = make([][]string, 0)
+	// 检查etc
+	serviceCheck = append(serviceCheck, []string{"etcd", func() string {
+		if fw.cnf.UseETCD == nil || !fw.cnf.UseETCD.Activation {
+			return "---"
+		}
+		if _, err := fw.Picker(fw.serverName); err != nil {
+			return "bad"
+		}
+		return "ok"
+	}()})
+	// 检查redis
+	serviceCheck = append(serviceCheck, []string{"redis", func() string {
+		if fw.cnf.UseRedis == nil || !fw.cnf.UseRedis.Activation {
+			return "---"
+		}
+		if err := fw.WriteRedis(gopsu.GetUUID1(), "value interface{}", time.Second); err != nil {
+			return "bad"
+		}
+		return "ok"
+	}()})
+	// 检查mq生产者
+	serviceCheck = append(serviceCheck, []string{"mq producer", func() string {
+		if fw.cnf.UseMQProducer == nil || !fw.cnf.UseMQProducer.Activation {
+			return "---"
+		}
+		if !fw.ProducerIsReady() {
+			return "bad"
+		}
+		return "ok"
+	}()})
+	// 检查mq消费者
+	serviceCheck = append(serviceCheck, []string{"mq consumer", func() string {
+		if fw.cnf.UseMQConsumer == nil || !fw.cnf.UseMQConsumer.Activation {
+			return "---"
+		}
+		if !fw.ConsumerIsReady() {
+			return "bad"
+		}
+		return "ok"
+	}()})
+	// 检查sql
+	serviceCheck = append(serviceCheck, []string{"sql", func() string {
+		if fw.cnf.UseSQL == nil || !fw.cnf.UseSQL.Activation {
+			return "---"
+		}
+		if !fw.MysqlIsReady() {
+			return "bad"
+		}
+		return "ok"
+	}()})
+	// 检查tcp
+	serviceCheck = append(serviceCheck, []string{"tcp", func() string {
+		if fw.cnf.UseTCP == nil || !fw.cnf.UseTCP.Activation {
+			return "---"
+		}
+		if !fw.tcpCtl.enable {
+			return "bad"
+		}
+		return "ok"
+	}()})
+	if c.Request.Method == "GET" {
+		var d = gin.H{
+			"timer":   gopsu.Stamp2Time(time.Now().Unix()),
+			"clients": serviceCheck,
+		}
+		t, _ := template.New("modcheck").Parse(TPLHEAD + TPLCSS + tbody)
+		h := render.HTML{
+			Name:     "modcheck",
+			Data:     d,
+			Template: t,
+		}
+		h.WriteContentType(c.Writer)
+		h.Render(c.Writer)
+		return
+	}
+	var js string
+	for _, v := range serviceCheck {
+		js, _ = sjson.Set(js, v[0], v[1])
+	}
+	c.PureJSON(200, gjson.Parse(js).Value())
 }
 
 func (fw *WMFrameWorkV2) pageStatus(c *gin.Context) {
@@ -230,7 +414,7 @@ func (fw *WMFrameWorkV2) pageStatus(c *gin.Context) {
 	switch c.Request.Method {
 	case "GET":
 		c.Header("Content-Type", "text/html")
-		t, _ := template.New("runtime").Parse(ginmiddleware.GetTemplateRuntime())
+		t, _ := template.New("runtime").Parse(TPLHEAD + TPLCSS + TPLBODY)
 		h := render.HTML{
 			Name:     "runtime",
 			Data:     statusInfo,

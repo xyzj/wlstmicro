@@ -223,9 +223,9 @@ func (fw *WMFrameWorkV2) UnBindRabbitMQ(keys ...string) {
 }
 
 // WriteRabbitMQ 写mq
-func (fw *WMFrameWorkV2) WriteRabbitMQ(key string, value []byte, expire time.Duration, msgproto ...proto.Message) {
+func (fw *WMFrameWorkV2) WriteRabbitMQ(key string, value []byte, expire time.Duration, msgproto ...proto.Message) error {
 	if !fw.ProducerIsReady() {
-		return
+		return fmt.Errorf("mq producer is not ready")
 	}
 	key = fw.AppendRootPathRabbit(key)
 	err := fw.rmqCtl.mqProducer.SendCustom(&mq.RabbitMQData{
@@ -238,15 +238,16 @@ func (fw *WMFrameWorkV2) WriteRabbitMQ(key string, value []byte, expire time.Dur
 			Body:         value,
 		},
 	})
-	if err == nil {
-		if msgproto != nil {
-			fw.WriteInfo("MQP", "S:"+key+"|"+gopsu.PB2String(v6.MsgFromBytes(value, msgproto[0])))
-		} else {
-			fw.WriteInfo("MQP", "S:"+key+"|"+string(value))
-		}
-	} else {
+	if err != nil {
 		fw.WriteError("MQP", "SndErr:"+key+"|"+err.Error())
+		return err
 	}
+	if msgproto != nil {
+		fw.WriteInfo("MQP", "S:"+key+"|"+gopsu.PB2String(v6.MsgFromBytes(value, msgproto[0])))
+	} else {
+		fw.WriteInfo("MQP", "S:"+key+"|"+string(value))
+	}
+	return nil
 }
 
 // PubEvent 事件id，状态，过滤器，用户名，详细，来源ip，额外数据

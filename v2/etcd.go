@@ -74,6 +74,7 @@ func (fw *WMFrameWorkV2) newETCDClient() {
 	}
 RUN:
 	var locker sync.WaitGroup
+	locker.Add(1)
 	go func() {
 		defer func() {
 			if err := recover(); err != nil {
@@ -81,8 +82,6 @@ RUN:
 			}
 			locker.Done()
 		}()
-
-		locker.Add(1)
 		var err error
 		if fw.etcdCtl.usetls {
 			fw.etcdCtl.client, err = microgo.NewEtcdv3ClientTLS([]string{fw.etcdCtl.addr}, fw.tlsCert, fw.tlsKey, fw.tlsRoot, fw.etcdCtl.username, fw.etcdCtl.password)
@@ -133,6 +132,13 @@ func (fw *WMFrameWorkV2) Picker(svrName string) (string, error) {
 		return "", err
 	}
 	return addr, nil
+}
+
+func (fw *WMFrameWorkV2) AllServices() (string, error) {
+	if !fw.etcdCtl.enable {
+		return "", fmt.Errorf("etcd client not ready")
+	}
+	return fw.etcdCtl.client.AllServices(), nil
 }
 
 // PickerDetail 选取服务地址,带http(s)前缀

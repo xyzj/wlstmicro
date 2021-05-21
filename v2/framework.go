@@ -125,6 +125,7 @@ func NewFrameWorkV2(versionInfo string) *WMFrameWorkV2 {
 // 启动模组，不阻塞
 func (fw *WMFrameWorkV2) Start(opv2 *OptionFrameWorkV2) {
 	// 设置日志
+	fw.cnf = opv2
 	if fw.loggerMark == "" {
 		if opv2.UseETCD != nil {
 			if opv2.UseETCD.SvrName != "" {

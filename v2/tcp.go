@@ -24,6 +24,7 @@ type tcpConfigure struct {
 	mqFlag            string       // mq发送标识
 	matchOne          bool         // 是否只匹配一个
 	filterIP          bool         // 过滤ip，仅允许合法ip连接，从redis获取
+	enable            bool
 }
 
 // TCPBase tcp 模块基础接口
@@ -178,6 +179,7 @@ func (fw *WMFrameWorkV2) newTCPService(t TCPBase) {
 		return
 	}
 	fw.WriteSystem("TCP", fmt.Sprintf("Success bind on port %d", fw.tcpCtl.bindPort))
+	fw.tcpCtl.enable = true
 	defer func() {
 		if ex := recover(); ex != nil {
 			fw.WriteError("TCP", fmt.Sprintf("TCP listener(%d) crash, NEED RESTART: %+v", fw.tcpCtl.bindPort, errors.WithStack(ex.(error))))

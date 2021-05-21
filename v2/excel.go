@@ -24,8 +24,7 @@ func (e *excelData) AddRow(cells ...interface{}) {
 	row.SetHeight(15)
 	// row.WriteSlice(cells, -1)
 	for _, v := range cells {
-		cell := row.AddCell()
-		cell.SetValue(v)
+		row.AddCell().SetValue(v)
 	}
 }
 
