@@ -33,6 +33,9 @@ var caCert []byte
 //go:embed ca/localhost-key.pem
 var caKey []byte
 
+//go:embed ca/localhost.pfx
+var caPfx []byte
+
 // NewFrameWorkV2 初始化一个新的framework
 func NewFrameWorkV2(versionInfo string) *WMFrameWorkV2 {
 	if !flag.Parsed() {
@@ -117,6 +120,9 @@ func NewFrameWorkV2(versionInfo string) *WMFrameWorkV2 {
 	}
 	if !gopsu.IsExist(fw.tlsKey) {
 		ioutil.WriteFile(fw.tlsKey, caKey, 0644)
+	}
+	if !gopsu.IsExist(filepath.Join(fw.baseCAPath, "localhost.pfx")) {
+		ioutil.WriteFile(filepath.Join(fw.baseCAPath, "localhost.pfx"), caPfx, 0644)
 	}
 	return fw
 }
