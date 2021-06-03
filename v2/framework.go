@@ -7,6 +7,7 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -67,7 +68,7 @@ func NewFrameWorkV2(versionInfo string) *WMFrameWorkV2 {
 		chanTCPWorker: make(chan interface{}, 5000),
 		JSON:          jsoniter.Config{}.Froze(),
 		httpClientPool: &http.Client{
-			Timeout: time.Duration(time.Second * 60),
+			// Timeout: time.Duration(time.Second * 60),
 			Transport: &http.Transport{
 				IdleConnTimeout:     time.Second * 10,
 				MaxConnsPerHost:     100,
@@ -304,16 +305,19 @@ func (fw *WMFrameWorkV2) loadConfigure(f string) {
 		fw.httpKey = filepath.Join(fw.baseCAPath, domainName+".key")
 	}
 	// 以下参数不自动生成，影响dorequest性能
-	var trTimeo = time.Second * 60
 	s, err := fw.wmConf.GetItem("tr_timeo")
 	if err == nil {
-		if gopsu.String2Int(s, 10) > 2 {
+		if gopsu.String2Int(s, 10) > 5 {
 			trTimeo = time.Second * time.Duration(gopsu.String2Int(s, 10))
 		}
 	}
 	fw.httpClientPool = &http.Client{
-		Timeout: time.Duration(trTimeo),
+		Timeout: time.Second * trTimeo,
 		Transport: &http.Transport{
+			DialContext: (&net.Dialer{
+				Timeout: time.Second,
+			}).DialContext,
+			TLSHandshakeTimeout: time.Second,
 			IdleConnTimeout:     time.Second * 10,
 			MaxConnsPerHost:     777,
 			MaxIdleConns:        1,

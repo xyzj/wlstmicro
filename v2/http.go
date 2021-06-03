@@ -2,6 +2,7 @@ package wmv2
 
 import (
 	"bytes"
+	"context"
 	"embed"
 	"encoding/json"
 	"fmt"
@@ -109,6 +110,7 @@ var (
 	apidocPath = "docs/apidoc.html"
 	yaagConfig *yaag.Config
 	rever      = strings.NewReplacer("{\n", "", "}", "", `"`, "", ",", "")
+	trTimeo    = time.Second * 30
 )
 
 func apidoc(c *gin.Context) {
@@ -268,15 +270,10 @@ func (fw *WMFrameWorkV2) newHTTPService(r *gin.Engine) {
 // req: http.NewRequest()
 // logdetail: [日志等级(0,10,20,30,40),日志追加信息]
 // 返回statusCode, body, headers, error
-func (fw *WMFrameWorkV2) DoRequest(req *http.Request, logdetail ...string) (int, []byte, map[string]string, error) {
-	level := 20
-	if !*debug {
-		if len(logdetail) == 0 || logdetail[0] == "nil" {
-			level = 0
-		}
-	}
-	// fw.WriteLog("HTTP", fmt.Sprintf("%s request to %s|%s", req.Method, req.URL.String(), strings.Join(logdetail, ",")), 10)
-	resp, err := fw.httpClientPool.Do(req)
+func (fw *WMFrameWorkV2) DoRequestWithTimeout(req *http.Request, timeo time.Duration) (int, []byte, map[string]string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*timeo)
+	defer cancel()
+	resp, err := fw.httpClientPool.Do(req.WithContext(ctx))
 	if err != nil {
 		fw.WriteError("HTTP FWD", "request error: "+err.Error())
 		return 502, nil, nil, err
@@ -293,8 +290,13 @@ func (fw *WMFrameWorkV2) DoRequest(req *http.Request, logdetail ...string) (int,
 		h[k] = resp.Header.Get(k)
 	}
 	sc := resp.StatusCode
-	fw.WriteLog("HTTP FWD", fmt.Sprintf("%s response %d from %s|%v", req.Method, sc, req.URL.String(), string(b)), level)
+	if fw.Debug() {
+		fw.WriteDebug("HTTP FWD", fmt.Sprintf("%s response %d from %s|%v", req.Method, sc, req.URL.String(), string(b)))
+	}
 	return sc, b, h, nil
+}
+func (fw *WMFrameWorkV2) DoRequest(req *http.Request) (int, []byte, map[string]string, error) {
+	return fw.DoRequestWithTimeout(req, time.Second*trTimeo)
 }
 
 func (fw *WMFrameWorkV2) pageModCheck(c *gin.Context) {
