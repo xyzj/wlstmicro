@@ -345,7 +345,7 @@ func (fw *WMFrameWorkV2) pageModCheck(c *gin.Context) {
 		return "ok"
 	}()})
 	// 检查mq生产者
-	serviceCheck = append(serviceCheck, []string{"mq producer", func() string {
+	serviceCheck = append(serviceCheck, []string{"mq_producer", func() string {
 		if fw.cnf.UseMQProducer == nil || !fw.cnf.UseMQProducer.Activation {
 			return "---"
 		}
@@ -355,7 +355,7 @@ func (fw *WMFrameWorkV2) pageModCheck(c *gin.Context) {
 		return "ok"
 	}()})
 	// 检查mq消费者
-	serviceCheck = append(serviceCheck, []string{"mq consumer", func() string {
+	serviceCheck = append(serviceCheck, []string{"mq_consumer", func() string {
 		if fw.cnf.UseMQConsumer == nil || !fw.cnf.UseMQConsumer.Activation {
 			return "---"
 		}
