@@ -322,6 +322,8 @@ func (fw *WMFrameWorkV2) pageModCheck(c *gin.Context) {
 </body>
 {{end}}`
 	var serviceCheck = make([][]string, 0)
+	// 版本
+	serviceCheck = append(serviceCheck, []string{"ver", gjson.Parse(fw.verJSON).Get("version").String()})
 	// 检查etc
 	serviceCheck = append(serviceCheck, []string{"etcd", func() string {
 		if fw.cnf.UseETCD == nil || !fw.cnf.UseETCD.Activation {
@@ -481,21 +483,13 @@ func (fw *WMFrameWorkV2) PrepareToken(forceAbort ...bool) gin.HandlerFunc {
 			Key:   "_userTokenPath",
 			Value: tokenPath,
 		})
-		asboss := "0"
-		if ans.Get("user_name").String() == "root" {
-			asboss = "1"
-		}
 		c.Params = append(c.Params, gin.Param{
-			Key:   "_userAsBoss",
-			Value: asboss,
+			Key:   "_userDepID",
+			Value: ans.Get("dep_id").String(),
 		})
 		c.Params = append(c.Params, gin.Param{
 			Key:   "_userTokenName",
 			Value: ans.Get("user_name").String(),
-		})
-		c.Params = append(c.Params, gin.Param{
-			Key:   "_userOwner",
-			Value: ans.Get("owner").String(),
 		})
 		asadmin := ans.Get("asadmin").String()
 		if asadmin == "0" {

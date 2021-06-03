@@ -305,25 +305,17 @@ func (fw *WMFrameWorkV2) loadConfigure(f string) {
 	}
 	// 以下参数不自动生成，影响dorequest性能
 	var trTimeo = time.Second * 60
-	var trMaxconnPerHost int
 	s, err := fw.wmConf.GetItem("tr_timeo")
 	if err == nil {
 		if gopsu.String2Int(s, 10) > 2 {
 			trTimeo = time.Second * time.Duration(gopsu.String2Int(s, 10))
 		}
 	}
-	s, err = fw.wmConf.GetItem("tr_maxconn_perhost")
-	if err == nil {
-		trMaxconnPerHost = gopsu.String2Int(s, 10)
-	}
-	if !(trMaxconnPerHost < 1 || trMaxconnPerHost > 2000) {
-		trMaxconnPerHost = 100
-	}
 	fw.httpClientPool = &http.Client{
 		Timeout: time.Duration(trTimeo),
 		Transport: &http.Transport{
 			IdleConnTimeout:     time.Second * 10,
-			MaxConnsPerHost:     trMaxconnPerHost,
+			MaxConnsPerHost:     777,
 			MaxIdleConns:        1,
 			MaxIdleConnsPerHost: 1,
 			TLSClientConfig: &tls.Config{
