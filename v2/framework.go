@@ -312,7 +312,7 @@ func (fw *WMFrameWorkV2) loadConfigure(f string) {
 		}
 	}
 	fw.httpClientPool = &http.Client{
-		Timeout: time.Second * trTimeo,
+		Timeout: trTimeo,
 		Transport: &http.Transport{
 			DialContext: (&net.Dialer{
 				Timeout: time.Second,

@@ -271,7 +271,7 @@ func (fw *WMFrameWorkV2) newHTTPService(r *gin.Engine) {
 // logdetail: [日志等级(0,10,20,30,40),日志追加信息]
 // 返回statusCode, body, headers, error
 func (fw *WMFrameWorkV2) DoRequestWithTimeout(req *http.Request, timeo time.Duration) (int, []byte, map[string]string, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*timeo)
+	ctx, cancel := context.WithTimeout(context.Background(), timeo)
 	defer cancel()
 	resp, err := fw.httpClientPool.Do(req.WithContext(ctx))
 	if err != nil {
@@ -296,7 +296,7 @@ func (fw *WMFrameWorkV2) DoRequestWithTimeout(req *http.Request, timeo time.Dura
 	return sc, b, h, nil
 }
 func (fw *WMFrameWorkV2) DoRequest(req *http.Request) (int, []byte, map[string]string, error) {
-	return fw.DoRequestWithTimeout(req, time.Second*trTimeo)
+	return fw.DoRequestWithTimeout(req, trTimeo)
 }
 
 func (fw *WMFrameWorkV2) pageModCheck(c *gin.Context) {
