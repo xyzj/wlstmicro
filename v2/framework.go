@@ -298,7 +298,10 @@ func (fw *WMFrameWorkV2) loadConfigure(f string) {
 	fw.rootPathMQ = fw.rootPath + "."
 	domainName := fw.wmConf.GetItemDefault("domain_name", "", "set the domain name, cert and key file name should be xxx.crt & xxx.key")
 	fw.gpsTimer = gopsu.String2Int64(fw.wmConf.GetItemDefault("gpstimer", "0", "是否使用广播的gps时间进行对时操作,0-不启用，1-启用（30～900s内进行矫正），2-忽略误差范围强制矫正"), 10)
-
+	tl, _ := fw.wmConf.GetItem("token_life")
+	if tt := gopsu.String2Int(tl, 10); tt > 1 && tt < 4320 {
+		fw.tokenLife = time.Minute * time.Duration(tt)
+	}
 	fw.wmConf.Save()
 	if domainName != "" {
 		fw.httpCert = filepath.Join(fw.baseCAPath, domainName+".crt")
