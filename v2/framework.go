@@ -185,32 +185,11 @@ func (fw *WMFrameWorkV2) Start(opv2 *OptionFrameWorkV2) {
 	if opv2.UseSQL != nil {
 		if opv2.UseSQL.Activation {
 			if fw.newDBClient() {
+				// 数据库升级
+				fw.DBUpgrade(opv2.UseSQL.DBUpgrade)
+				// 分表维护线程
 				if opv2.UseSQL.DoMERGE {
 					go fw.MaintainMrgTables()
-				}
-				// 检查是否存在更新的脚本
-				exe, _ := os.Executable()
-				upsql := exe + ".sql"
-				if gopsu.IsExist(upsql) {
-					b, err := ioutil.ReadFile(upsql)
-					if err != nil {
-						fw.WriteError("DBUP", err.Error())
-					} else {
-						var err error
-						fw.WriteInfo("DBUP", "Try to update database by "+upsql)
-						for _, v := range strings.Split(string(b), "\n") {
-							s := gopsu.TrimString(v)
-							if s == "" {
-								continue
-							}
-							if _, _, err = fw.dbCtl.client.Exec(s); err != nil {
-								fw.WriteError("DBUP", s+" | "+err.Error())
-							}
-						}
-						if !*debug {
-							os.Remove(upsql)
-						}
-					}
 				}
 			}
 		}

@@ -62,6 +62,8 @@ type OptionSQL struct {
 	DoMERGE bool
 	// 启用
 	Activation bool
+	// 设置升级脚本
+	DBUpgrade []byte
 }
 
 // OptionRedis redis配置

@@ -1,9 +1,10 @@
 package wmv2
 
 import (
+	"io/ioutil"
+	"os"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/tidwall/sjson"
@@ -94,19 +95,18 @@ func (fw *WMFrameWorkV2) newDBClient() bool {
 
 // MaintainMrgTables 维护mrg引擎表
 func (fw *WMFrameWorkV2) MaintainMrgTables() {
+	// 延迟一下，确保sql已连接
+	time.Sleep(time.Minute)
 	if !fw.dbCtl.enable {
 		return
 	}
-	var mrgLocker sync.WaitGroup
 MAINTAIN:
-	go func() {
+	func() {
 		defer func() {
 			if err := recover(); err != nil {
 				fw.WriteError("SQL", err.(error).Error())
 			}
-			mrgLocker.Done()
 		}()
-		mrgLocker.Add(1)
 		for {
 			t := time.Now()
 			if t.Minute() == 1 && t.Hour() == 2 {
@@ -143,7 +143,6 @@ MAINTAIN:
 		}
 	}()
 	time.Sleep(time.Minute)
-	mrgLocker.Wait()
 	goto MAINTAIN
 }
 
@@ -155,4 +154,35 @@ func (fw *WMFrameWorkV2) MysqlIsReady() bool {
 // ViewSQLConfig 查看sql配置,返回json字符串
 func (fw *WMFrameWorkV2) ViewSQLConfig() string {
 	return fw.dbCtl.forshow
+}
+
+// DBUpgrade 检查是否需要升级数据库
+//  返回是否执行过升级，true-执行了升级，false-不需要升级
+func (fw *WMFrameWorkV2) DBUpgrade(sql []byte) bool {
+	if !fw.dbCtl.enable || sql == nil {
+		return false
+	}
+	// 检查升级文件
+	exe, _ := os.Executable()
+	upsql := exe + ".dbupg"
+	// 校验升级脚本
+	b, _ := ioutil.ReadFile(upsql)
+	if string(b) == gopsu.GetMD5((string(sql))) { // 升级脚本已执行过，不再重复升级
+		return false
+	}
+	// 执行升级脚本
+	var err error
+	fw.WriteInfo("DBUP", "Try to update database")
+	for _, v := range strings.Split(string(sql), "\n") {
+		s := gopsu.TrimString(v)
+		if s == "" {
+			continue
+		}
+		if _, _, err = fw.dbCtl.client.Exec(s); err != nil {
+			fw.WriteError("DBUP", s+" | "+err.Error())
+		}
+	}
+	// 标记脚本，下次启动不再重复升级
+	ioutil.WriteFile(upsql, []byte(gopsu.GetMD5(string(sql))), 0664)
+	return true
 }
