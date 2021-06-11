@@ -5,7 +5,6 @@ import (
 	"net"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/pkg/errors"
@@ -73,14 +72,11 @@ func (fw *WMFrameWorkV2) newETCDClient() {
 		httpType = "http"
 	}
 RUN:
-	var locker sync.WaitGroup
-	locker.Add(1)
-	go func() {
+	func() {
 		defer func() {
 			if err := recover(); err != nil {
 				fw.WriteError("ETCD", fmt.Sprintf("etcd register crash: %+v", errors.WithStack(err.(error))))
 			}
-			locker.Done()
 		}()
 		var err error
 		if fw.etcdCtl.usetls {
@@ -113,7 +109,6 @@ RUN:
 		fw.etcdCtl.client.Register(fw.serverName, a, b, httpType, "json")
 	}()
 	time.Sleep(time.Second * 3)
-	locker.Wait()
 	goto RUN
 }
 

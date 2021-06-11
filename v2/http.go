@@ -487,7 +487,7 @@ func (fw *WMFrameWorkV2) PrepareToken(forceAbort ...bool) gin.HandlerFunc {
 		})
 		c.Params = append(c.Params, gin.Param{
 			Key:   "_userDepID",
-			Value: ans.Get("dep_id").String(),
+			Value: ans.Get("userinfo.dep_id").String(),
 		})
 		c.Params = append(c.Params, gin.Param{
 			Key:   "_userTokenName",
@@ -495,7 +495,7 @@ func (fw *WMFrameWorkV2) PrepareToken(forceAbort ...bool) gin.HandlerFunc {
 		})
 		asadmin := ans.Get("asadmin").String()
 		if asadmin == "0" {
-			asadmin = ans.Get("userinfo.User_admin").String()
+			asadmin = ans.Get("userinfo.user_admin").String()
 		}
 		c.Params = append(c.Params, gin.Param{
 			Key:   "_userAsAdmin",

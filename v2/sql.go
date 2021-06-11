@@ -2,7 +2,7 @@ package wmv2
 
 import (
 	"io/ioutil"
-	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -163,8 +163,7 @@ func (fw *WMFrameWorkV2) DBUpgrade(sql []byte) bool {
 		return false
 	}
 	// 检查升级文件
-	exe, _ := os.Executable()
-	upsql := exe + ".dbupg"
+	upsql := filepath.Join(gopsu.GetExecDir(), gopsu.GetExecName()) + ".dbupg"
 	// 校验升级脚本
 	b, _ := ioutil.ReadFile(upsql)
 	if string(b) == gopsu.GetMD5((string(sql))) { // 升级脚本已执行过，不再重复升级
@@ -173,12 +172,15 @@ func (fw *WMFrameWorkV2) DBUpgrade(sql []byte) bool {
 	// 执行升级脚本
 	var err error
 	fw.WriteInfo("DBUP", "Try to update database")
-	for _, v := range strings.Split(string(sql), "\n") {
-		s := gopsu.TrimString(v)
+	for _, v := range strings.Split(string(sql), ";") {
+		s := strings.TrimSpace(v)
 		if s == "" {
 			continue
 		}
-		if _, _, err = fw.dbCtl.client.Exec(s); err != nil {
+		if _, _, err = fw.dbCtl.client.Exec(s + ";"); err != nil {
+			if strings.Contains(err.Error(), "Duplicate") {
+				continue
+			}
 			fw.WriteError("DBUP", s+" | "+err.Error())
 		}
 	}
