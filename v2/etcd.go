@@ -56,7 +56,7 @@ func (fw *WMFrameWorkV2) newETCDClient() {
 	}
 	if fw.etcdCtl.regAddr == "127.0.0.1" || fw.etcdCtl.regAddr == "" {
 		fw.etcdCtl.regAddr = gopsu.RealIP(fw.etcdCtl.v6)
-		fw.wmConf.UpdateItem("etcd_reg", fw.etcdCtl.regAddr)
+		// fw.wmConf.UpdateItem("etcd_reg", fw.etcdCtl.regAddr)
 	}
 	fw.wmConf.Save()
 	fw.etcdCtl.show(fw.rootPath)
