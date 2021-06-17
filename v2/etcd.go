@@ -107,9 +107,10 @@ RUN:
 			b = strconv.Itoa(*webPort)
 		}
 		if err := fw.etcdCtl.client.Register(fw.serverName, a, b, httpType, "json"); err != nil {
-			if strings.Contains(err.Error(), "user name is empty") {
+			switch {
+			case strings.Contains(err.Error(), "user name is empty"):
 				fw.etcdCtl.useauth = true
-			} else if strings.Contains(err.Error(), "authentication is not enabled") {
+			case strings.Contains(err.Error(), "authentication is not enabled"):
 				fw.etcdCtl.useauth = false
 			}
 		}
