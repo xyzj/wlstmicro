@@ -63,15 +63,15 @@ func (fw *WMFrameWorkV2) newETCDClient() {
 	if !fw.etcdCtl.enable {
 		return
 	}
-	if fw.etcdCtl.useauth {
-		fw.etcdCtl.username = "root"
-		fw.etcdCtl.password = gopsu.DecodeString("wMQLEoOHM2eOF6O7Ho8MH74jZ1vMs5i1B+VL+ozl")
-	}
 	var httpType = "https"
 	if *debug || *forceHTTP {
 		httpType = "http"
 	}
 RUN:
+	if fw.etcdCtl.useauth {
+		fw.etcdCtl.username = "root"
+		fw.etcdCtl.password = gopsu.DecodeString("wMQLEoOHM2eOF6O7Ho8MH74jZ1vMs5i1B+VL+ozl")
+	}
 	func() {
 		defer func() {
 			if err := recover(); err != nil {
@@ -106,7 +106,13 @@ RUN:
 		if b == "" {
 			b = strconv.Itoa(*webPort)
 		}
-		fw.etcdCtl.client.Register(fw.serverName, a, b, httpType, "json")
+		if err := fw.etcdCtl.client.Register(fw.serverName, a, b, httpType, "json"); err != nil {
+			if strings.Contains(err.Error(), "user name is empty") {
+				fw.etcdCtl.useauth = true
+			} else if strings.Contains(err.Error(), "authentication is not enabled") {
+				fw.etcdCtl.useauth = false
+			}
+		}
 	}()
 	time.Sleep(time.Second * 3)
 	goto RUN
