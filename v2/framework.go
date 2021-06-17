@@ -184,9 +184,7 @@ func (fw *WMFrameWorkV2) Start(opv2 *OptionFrameWorkV2) {
 	// sql
 	if opv2.UseSQL != nil {
 		if opv2.UseSQL.Activation {
-			if fw.newDBClient() {
-				// 数据库升级
-				fw.DBUpgrade(opv2.UseSQL.DBUpgrade)
+			if fw.newDBClient(string(opv2.UseSQL.DBInit), string(opv2.UseSQL.DBUpgrade)) {
 				// 分表维护线程
 				if opv2.UseSQL.DoMERGE {
 					go fw.MaintainMrgTables()

@@ -64,6 +64,8 @@ type OptionSQL struct {
 	Activation bool
 	// 设置升级脚本
 	DBUpgrade []byte
+	// 设置初始化脚本
+	DBInit []byte
 }
 
 // OptionRedis redis配置

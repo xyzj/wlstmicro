@@ -2,6 +2,7 @@ package wmv2
 
 import (
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -39,6 +40,11 @@ type dbConfigure struct {
 	client *db.SQLPool
 }
 
+var (
+	// 检查升级文件
+	upsql = filepath.Join(gopsu.GetExecDir(), gopsu.GetExecName()) + ".dbupg"
+)
+
 func (conf *dbConfigure) show() string {
 	conf.forshow, _ = sjson.Set("", "addr", conf.addr)
 	conf.forshow, _ = sjson.Set(conf.forshow, "user", CWorker.Encrypt(conf.user))
@@ -50,7 +56,7 @@ func (conf *dbConfigure) show() string {
 }
 
 // Newfw.dbCtl.client mariadb client
-func (fw *WMFrameWorkV2) newDBClient() bool {
+func (fw *WMFrameWorkV2) newDBClient(dbinit, dbupgrade string) bool {
 	fw.dbCtl.addr = fw.wmConf.GetItemDefault("db_addr", "127.0.0.1:3306", "sql服务地址,ip[:port[/instance]]格式")
 	fw.dbCtl.user = fw.wmConf.GetItemDefault("db_user", "root", "sql用户名")
 	fw.dbCtl.pwd = gopsu.DecodeString(fw.wmConf.GetItemDefault("db_pwd", "SsWAbSy8H1EOP3n5LdUQqls", "sql密码"))
@@ -62,6 +68,8 @@ func (fw *WMFrameWorkV2) newDBClient() bool {
 	if !fw.dbCtl.enable {
 		return false
 	}
+	var dbname = fw.dbCtl.database
+DBCONN:
 	fw.dbCtl.client = &db.SQLPool{
 		User:         fw.dbCtl.user,
 		Server:       fw.dbCtl.addr,
@@ -85,11 +93,34 @@ func (fw *WMFrameWorkV2) newDBClient() bool {
 	}
 	err := fw.dbCtl.client.New()
 	if err != nil {
+		if strings.Contains(err.Error(), "Unknown database") {
+			fw.dbCtl.database = ""
+			fw.WriteError("SQL", err.Error()+" Try to create one...")
+			goto DBCONN
+		}
 		fw.dbCtl.enable = false
 		fw.WriteError("SQL", "Failed connect to server "+fw.dbCtl.addr+"|"+err.Error())
 		return false
 	}
-
+	if fw.dbCtl.database == "" && dbname != "" {
+		fw.WriteError("SQL", "Create Database on "+fw.dbCtl.addr)
+		if _, _, err := fw.dbCtl.client.Exec("CREATE DATABASE IF NOT EXISTS `" + dbname + "`;USE `" + dbname + "`;"); err != nil {
+			fw.dbCtl.enable = false
+			fw.WriteError("SQL", "Create Database error: "+fw.dbCtl.addr+"|"+err.Error())
+			return false
+		}
+		if len(dbinit) > 0 {
+			os.Remove(upsql)
+			fw.WriteError("SQL", "Create Tables on "+fw.dbCtl.addr)
+			if _, _, err := fw.dbCtl.client.Exec(dbinit); err != nil {
+				fw.dbCtl.enable = false
+				fw.WriteError("SQL", "Create Tables error: "+fw.dbCtl.addr+"|"+err.Error())
+				return false
+			}
+		}
+		fw.dbCtl.database = dbname
+	}
+	fw.dbUpgrade(dbupgrade)
 	return true
 }
 
@@ -158,21 +189,19 @@ func (fw *WMFrameWorkV2) ViewSQLConfig() string {
 
 // DBUpgrade 检查是否需要升级数据库
 //  返回是否执行过升级，true-执行了升级，false-不需要升级
-func (fw *WMFrameWorkV2) DBUpgrade(sql []byte) bool {
-	if !fw.dbCtl.enable || sql == nil {
+func (fw *WMFrameWorkV2) dbUpgrade(sql string) bool {
+	if !fw.dbCtl.enable || sql == "" {
 		return false
 	}
-	// 检查升级文件
-	upsql := filepath.Join(gopsu.GetExecDir(), gopsu.GetExecName()) + ".dbupg"
 	// 校验升级脚本
 	b, _ := ioutil.ReadFile(upsql)
-	if string(b) == gopsu.GetMD5((string(sql))) { // 升级脚本已执行过，不再重复升级
+	if string(b) == gopsu.GetMD5(sql) { // 升级脚本已执行过，不再重复升级
 		return false
 	}
 	// 执行升级脚本
 	var err error
 	fw.WriteInfo("DBUP", "Try to update database")
-	for _, v := range strings.Split(string(sql), ";") {
+	for _, v := range strings.Split(sql, ";") {
 		s := strings.TrimSpace(v)
 		if s == "" {
 			continue
@@ -185,6 +214,6 @@ func (fw *WMFrameWorkV2) DBUpgrade(sql []byte) bool {
 		}
 	}
 	// 标记脚本，下次启动不再重复升级
-	ioutil.WriteFile(upsql, []byte(gopsu.GetMD5(string(sql))), 0664)
+	ioutil.WriteFile(upsql, []byte(gopsu.GetMD5(sql)), 0664)
 	return true
 }
