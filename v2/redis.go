@@ -203,6 +203,11 @@ func (fw *WMFrameWorkV2) ReadAllRedis(key string) ([]string, error) {
 	return s, nil
 }
 
+// 返回redis客户端
+func (fw *WMFrameWorkV2) RedisClient() *redis.Client {
+	return fw.redisCtl.client
+}
+
 // RedisIsReady 返回redis可用状态
 func (fw *WMFrameWorkV2) RedisIsReady() bool {
 	return fw.redisCtl.enable
