@@ -3,15 +3,21 @@ package wmv2
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"embed"
 	"encoding/json"
 	"fmt"
 	"html/template"
+	"io"
 	"io/ioutil"
+	"math/rand"
 	"net/http"
 	"os"
+	"os/exec"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/tidwall/sjson"
@@ -219,8 +225,6 @@ func (fw *WMFrameWorkV2) NewHTTPEngine(f ...gin.HandlerFunc) *gin.Engine {
 	}
 	yaag.Init(yaagConfig)
 	r.Use(yaaggin.Document())
-	// have fun
-	// r.GET("/game", game.GameGroup)
 	r.GET("/game/:game", game.GameGroup)
 	return r
 }
@@ -256,14 +260,128 @@ func (fw *WMFrameWorkV2) newHTTPService(r *gin.Engine) {
 	var err error
 	if *debug || *forceHTTP {
 		fw.httpProtocol = "http://"
-		err = ginmiddleware.ListenAndServe(*webPort, r)
+		err = fw.listenAndServeTLS(*webPort, r, "", "", "")
 	} else {
 		fw.httpProtocol = "https://"
-		err = ginmiddleware.ListenAndServeTLS(*webPort, r, fw.httpCert, fw.httpKey, "")
+		err = fw.listenAndServeTLS(*webPort, r, fw.httpCert, fw.httpKey, "")
 	}
 	if err != nil {
 		fw.WriteError("HTTP", "Failed start HTTP(S) server at :"+strconv.Itoa(*webPort)+"|"+err.Error())
 	}
+}
+func (fw *WMFrameWorkV2) listenAndServeTLS(port int, h *gin.Engine, certfile, keyfile string, clientca string) error {
+	// 路由处理
+	var findRoot = false
+	for _, v := range h.Routes() {
+		if v.Path == "/" {
+			findRoot = true
+			break
+		}
+	}
+	if !findRoot {
+		h.GET("/", ginmiddleware.PageDefault)
+	}
+	// 设置全局超时
+	st := ginmiddleware.GetSocketTimeout()
+	// 初始化
+	s := &http.Server{
+		Addr:         fmt.Sprintf(":%d", port),
+		Handler:      h,
+		ReadTimeout:  st,
+		WriteTimeout: st,
+		IdleTimeout:  st,
+	}
+	// 设置日志
+	var writer io.Writer
+	if gin.Mode() == gin.ReleaseMode {
+		writer = io.MultiWriter(gin.DefaultWriter, os.Stdout)
+	} else {
+		writer = io.MultiWriter(gin.DefaultWriter)
+	}
+	// 启动http服务
+	if strings.TrimSpace(certfile)+strings.TrimSpace(keyfile) == "" {
+		fmt.Fprintf(writer, "%s [90] [%s] %s\n", time.Now().Format(gopsu.ShortTimeFormat), "HTTP", "Success start HTTP server at :"+strconv.Itoa(port))
+		return s.ListenAndServe()
+	}
+	// 初始化证书
+	var tc = &tls.Config{
+		Certificates: make([]tls.Certificate, 1),
+	}
+	var err error
+	tc.Certificates[0], err = tls.LoadX509KeyPair(certfile, keyfile)
+	if err != nil {
+		return err
+	}
+	if len(clientca) > 0 {
+		pool := x509.NewCertPool()
+		caCrt, err := ioutil.ReadFile(clientca)
+		if err == nil {
+			pool.AppendCertsFromPEM(caCrt)
+			tc.ClientCAs = pool
+			tc.ClientAuth = tls.RequireAndVerifyClientCert
+		}
+	}
+	s.TLSConfig = tc
+	// 添加手动更新路由
+	h.GET("/cert/:do", func(c *gin.Context) {
+		if do, ok := c.Params.Get("do"); ok && do == "renew" {
+			var spath = gopsu.JoinPathFromHere("sslrenew")
+			if gopsu.OSNAME == "windows" {
+				spath += ".exe"
+			}
+			if !gopsu.IsExist(spath) {
+				c.String(400, "no sslrenew found")
+				return
+			}
+			cmd := exec.Command(spath)
+			err := cmd.Start()
+			if err != nil {
+				c.String(400, err.Error())
+				return
+			}
+			time.Sleep(time.Second)
+			cmd.Process.Signal(syscall.SIGINT)
+			cmd.Wait()
+			c.Writer.WriteString("sslrenew done\n")
+		}
+		fw.RenewCA()
+		c.String(200, "the certificate file has been reloaded")
+	})
+	// 启动证书维护线程
+	go fw.renewCA(s, certfile, keyfile)
+	// 启动https
+	fmt.Fprintf(writer, "%s [90] [%s] %s\n", time.Now().Format(gopsu.ShortTimeFormat), "HTTP", "Success start HTTPS server at :"+strconv.Itoa(port))
+	return s.ListenAndServeTLS("", "")
+}
+
+func (fw *WMFrameWorkV2) RenewCA() bool {
+	fw.chanSSLRenew <- 1
+	return true
+}
+
+// 后台更新证书
+func (fw *WMFrameWorkV2) renewCA(s *http.Server, certfile, keyfile string) {
+RUN:
+	func() {
+		defer func() {
+			if err := recover(); err != nil {
+				fmt.Fprintf(io.MultiWriter(gin.DefaultWriter, os.Stdout), "cert update crash: %s\n", err.(error).Error())
+			}
+		}()
+		for {
+			select {
+			case <-fw.chanSSLRenew:
+				newcert, err := tls.LoadX509KeyPair(certfile, keyfile)
+				if err == nil {
+					s.TLSConfig.Certificates[0] = newcert
+				}
+			case <-time.After(time.Hour * time.Duration(1+rand.Int31n(5))):
+				fw.chanSSLRenew <- 1
+			}
+		}
+	}()
+	time.Sleep(time.Second)
+	goto RUN
 }
 
 // DoRequest 进行http request请求

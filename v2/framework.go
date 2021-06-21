@@ -79,6 +79,7 @@ func NewFrameWorkV2(versionInfo string) *WMFrameWorkV2 {
 				},
 			},
 		},
+		chanSSLRenew: make(chan int, 2),
 	}
 	// 处置版本，检查机器码
 	fw.checkMachine()

@@ -164,12 +164,13 @@ type WMFrameWorkV2 struct {
 	gpsTimer      int64 // 启用gps校时,0-不启用，1-启用（30～900s内进行矫正），2-强制对时
 	httpProtocol  string
 	// tls配置
-	baseCAPath string
-	tlsCert    string //  = filepath.Join(baseCAPath, "client-cert.pem")
-	tlsKey     string //  = filepath.Join(baseCAPath, "client-key.pem")
-	tlsRoot    string //  = filepath.Join(baseCAPath, "rootca.pem")
-	httpCert   string
-	httpKey    string
+	baseCAPath   string
+	tlsCert      string //  = filepath.Join(baseCAPath, "client-cert.pem")
+	tlsKey       string //  = filepath.Join(baseCAPath, "client-key.pem")
+	tlsRoot      string //  = filepath.Join(baseCAPath, "rootca.pem")
+	httpCert     string
+	httpKey      string
+	chanSSLRenew chan int
 
 	// 配置
 	wmConf *gopsu.ConfData
