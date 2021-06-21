@@ -168,6 +168,34 @@ func (fw *WMFrameWorkV2) ReadRedis(key string) (string, error) {
 	return val.Val(), nil
 }
 
+// ReadHashRedis 读取所有hash数据
+func (fw *WMFrameWorkV2) ReadHashRedis(key, field string) (string, error) {
+	if !fw.redisCtl.enable {
+		return "", fmt.Errorf("redis is not ready")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), redisCtxTimeo)
+	defer cancel()
+	val := fw.redisCtl.client.HGet(ctx, key, field)
+	if val.Err() != nil {
+		return "", val.Err()
+	}
+	return val.Val(), nil
+}
+
+// ReadHashAllRedis 读取所有hash数据
+func (fw *WMFrameWorkV2) ReadHashAllRedis(key string) (map[string]string, error) {
+	if !fw.redisCtl.enable {
+		return nil, fmt.Errorf("redis is not ready")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), redisCtxTimeo)
+	defer cancel()
+	val := fw.redisCtl.client.HGetAll(ctx, key)
+	if val.Err() != nil {
+		return nil, val.Err()
+	}
+	return val.Val(), nil
+}
+
 // ReadAllRedisKeys 模糊读取所有匹配的key
 func (fw *WMFrameWorkV2) ReadAllRedisKeys(key string) *redis.StringSliceCmd {
 	if !fw.redisCtl.enable {
