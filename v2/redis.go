@@ -200,6 +200,23 @@ func (fw *WMFrameWorkV2) ReadHashAllRedis(key string) (map[string]string, error)
 	return val.Val(), nil
 }
 
+// HDel 删redis
+func (fw *WMFrameWorkV2) DelHashRedis(key string, fields ...string) error {
+	if !fw.redisCtl.enable {
+		return fmt.Errorf("redis is not ready")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), redisCtxTimeo)
+	defer cancel()
+	err := fw.redisCtl.client.HDel(ctx, fw.AppendRootPathRedis(key), fields...).Err()
+	if err != nil {
+		fw.WriteError("REDIS", fmt.Sprintf("Failed erase redis data: %+v|%s", key, err.Error()))
+		return err
+	}
+	fw.WriteInfo("REDIS", fmt.Sprintf("Erase redis data:%+v", key))
+	return nil
+}
+
 // ReadAllRedisKeys 模糊读取所有匹配的key
 func (fw *WMFrameWorkV2) ReadAllRedisKeys(key string) *redis.StringSliceCmd {
 	if !fw.redisCtl.enable {
@@ -233,6 +250,26 @@ func (fw *WMFrameWorkV2) ReadAllRedis(key string) ([]string, error) {
 		}
 	}
 	return s, nil
+}
+
+// WriteRedis 写redis
+func (fw *WMFrameWorkV2) WriteHashRedis(key string, hashes map[string]string) error {
+	if !fw.redisCtl.enable {
+		return fmt.Errorf("redis is not ready")
+	}
+	args := make([]string, 0)
+	for f, v := range hashes {
+		args = append(args, f)
+		args = append(args, v)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), redisCtxTimeo)
+	defer cancel()
+	err := fw.redisCtl.client.HSet(ctx, fw.AppendRootPathRedis(key), args).Err()
+	if err != nil {
+		fw.WriteError("REDIS", "Failed write redis data: "+key+"|"+err.Error())
+		return err
+	}
+	return nil
 }
 
 // 返回redis客户端
