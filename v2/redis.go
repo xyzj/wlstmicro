@@ -173,10 +173,12 @@ func (fw *WMFrameWorkV2) ReadHashRedis(key, field string) (string, error) {
 	if !fw.redisCtl.enable {
 		return "", fmt.Errorf("redis is not ready")
 	}
+	key = fw.AppendRootPathRedis(key)
 	ctx, cancel := context.WithTimeout(context.Background(), redisCtxTimeo)
 	defer cancel()
 	val := fw.redisCtl.client.HGet(ctx, key, field)
 	if val.Err() != nil {
+		fw.WriteError("REDIS", "Failed read redis hash data: "+key+"|"+val.Err().Error())
 		return "", val.Err()
 	}
 	return val.Val(), nil
@@ -187,10 +189,12 @@ func (fw *WMFrameWorkV2) ReadHashAllRedis(key string) (map[string]string, error)
 	if !fw.redisCtl.enable {
 		return nil, fmt.Errorf("redis is not ready")
 	}
+	key = fw.AppendRootPathRedis(key)
 	ctx, cancel := context.WithTimeout(context.Background(), redisCtxTimeo)
 	defer cancel()
 	val := fw.redisCtl.client.HGetAll(ctx, key)
 	if val.Err() != nil {
+		fw.WriteError("REDIS", "Failed read redis hash data: "+key+"|"+val.Err().Error())
 		return nil, val.Err()
 	}
 	return val.Val(), nil
