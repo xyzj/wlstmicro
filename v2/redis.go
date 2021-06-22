@@ -223,8 +223,6 @@ func (fw *WMFrameWorkV2) WriteHashRedis(key string, hashes map[string]string) er
 		args[idx] = f
 		args[idx+1] = v
 		idx += 2
-		// args = append(args, f)
-		// args = append(args, v)
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), redisCtxTimeo)
 	defer cancel()
