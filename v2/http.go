@@ -607,9 +607,13 @@ func (fw *WMFrameWorkV2) PrepareToken(forceAbort ...bool) gin.HandlerFunc {
 			Key:   "_userDepID",
 			Value: ans.Get("userinfo.dep_id").String(),
 		})
+		tokenname := ans.Get("link_name").String()
+		if tokenname == "" {
+			tokenname = ans.Get("user_name").String()
+		}
 		c.Params = append(c.Params, gin.Param{
 			Key:   "_userTokenName",
-			Value: ans.Get("user_name").String(),
+			Value: tokenname,
 		})
 		asadmin := ans.Get("asadmin").String()
 		if asadmin == "0" {

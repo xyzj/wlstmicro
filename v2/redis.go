@@ -205,12 +205,13 @@ func (fw *WMFrameWorkV2) WriteHashFieldRedis(key, field string, value interface{
 	if !fw.redisCtl.enable {
 		return fmt.Errorf("redis is not ready")
 	}
+	key = fw.AppendRootPathRedis(key)
 	ctx, cancel := context.WithTimeout(context.Background(), redisCtxTimeo)
 	defer cancel()
-	ok := fw.redisCtl.client.HSetNX(ctx, fw.AppendRootPathRedis(key), field, value)
-	if ok != nil {
-		fw.WriteError("REDIS", "Failed write redis hash data: "+key)
-		return fmt.Errorf("Failed write redis hash data: " + key)
+	val := fw.redisCtl.client.HSetNX(ctx, key, field, value)
+	if val.Err() != nil {
+		fw.WriteError("REDIS", "Failed write redis hash data: "+key+"|"+val.Err().Error())
+		return val.Err()
 	}
 	return nil
 }
