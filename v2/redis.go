@@ -200,6 +200,7 @@ func (fw *WMFrameWorkV2) ReadHashAllRedis(key string) (map[string]string, error)
 	return val.Val(), nil
 }
 
+// WriteHashFieldRedis 修改或添加redis hashmap中的值
 func (fw *WMFrameWorkV2) WriteHashFieldRedis(key, field string, value interface{}) error {
 	if !fw.redisCtl.enable {
 		return fmt.Errorf("redis is not ready")
@@ -213,6 +214,8 @@ func (fw *WMFrameWorkV2) WriteHashFieldRedis(key, field string, value interface{
 	}
 	return nil
 }
+
+// WriteHashRedis 向redis写hashmap数据
 func (fw *WMFrameWorkV2) WriteHashRedis(key string, hashes map[string]string) error {
 	if !fw.redisCtl.enable {
 		return fmt.Errorf("redis is not ready")
