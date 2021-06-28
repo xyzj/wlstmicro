@@ -63,6 +63,7 @@ func (fw *WMFrameWorkV2) newDBClient(dbinit, dbupgrade string) bool {
 	fw.dbCtl.database = fw.wmConf.GetItemDefault("db_name", "", "sql数据库名称")
 	fw.dbCtl.driver = fw.wmConf.GetItemDefault("db_drive", "mysql", "sql数据库驱动，mysql 或 mssql")
 	fw.dbCtl.enable, _ = strconv.ParseBool(fw.wmConf.GetItemDefault("db_enable", "true", "是否启用sql"))
+	dbcache := true //, _ := strconv.ParseBool(fw.wmConf.GetItemDefault("db_cache", "true", "是否启用结果集缓存"))
 	fw.wmConf.Save()
 	fw.dbCtl.show()
 	if !fw.dbCtl.enable {
@@ -75,7 +76,7 @@ DBCONN:
 		Server:       fw.dbCtl.addr,
 		Passwd:       fw.dbCtl.pwd,
 		DataBase:     fw.dbCtl.database,
-		EnableCache:  true,
+		EnableCache:  dbcache,
 		MaxOpenConns: 200,
 		CacheDir:     gopsu.DefaultCacheDir,
 		Timeout:      120,

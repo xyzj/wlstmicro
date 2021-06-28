@@ -259,6 +259,10 @@ func (fw *WMFrameWorkV2) PubEvent(eventid, status int, key, username, detail, fr
 	js, _ = sjson.Set(js, "from", from)
 	js, _ = sjson.Set(js, "status", status)
 	gjson.Parse(jsdata).ForEach(func(key, value gjson.Result) bool {
+		if key.String() == "data" {
+			js, _ = sjson.Set(js, "data", value.String())
+			return true
+		}
 		js, _ = sjson.Set(js, key.Str, value.Value())
 		return true
 	})
