@@ -189,6 +189,7 @@ func (fw *WMFrameWorkV2) NewHTTPEngine(f ...gin.HandlerFunc) *gin.Engine {
 	r.GET("/clearlog", ginmiddleware.CheckRequired("name"), ginmiddleware.Clearlog)
 	r.GET("/status", fw.pageStatus)
 	r.POST("/status", fw.pageStatus)
+	r.StaticFS("/downloadLog", http.Dir(gopsu.DefaultLogDir))
 	r.GET("/viewconfig", func(c *gin.Context) {
 		configInfo := make(map[string]interface{})
 		configInfo["startat"] = fw.startAt
@@ -250,11 +251,14 @@ func (fw *WMFrameWorkV2) newHTTPService(r *gin.Engine) {
 		r.GET("/", ginmiddleware.PageDefault)
 	}
 	if sss != "" {
-		r.GET("/showroutes", func(c *gin.Context) {
-			c.Header("Content-Type", "text/html")
-			c.Status(http.StatusOK)
-			render.WriteString(c.Writer, sss, nil)
-		})
+		r.GET("/showroutes", gin.BasicAuth(gin.Accounts{
+			"whowants2seethis?": "itsme,yourcreator.",
+		}),
+			func(c *gin.Context) {
+				c.Header("Content-Type", "text/html")
+				c.Status(http.StatusOK)
+				render.WriteString(c.Writer, sss, nil)
+			})
 	}
 
 	var err error

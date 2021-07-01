@@ -139,6 +139,9 @@ func (fw *WMFrameWorkV2) Start(opv2 *OptionFrameWorkV2) {
 			if opv2.UseETCD.SvrName != "" {
 				fw.serverName = opv2.UseETCD.SvrName
 			}
+			if *nameTail != "" {
+				fw.serverName += "-" + *nameTail
+			}
 		}
 		if fw.tcpCtl.bindPort > 0 {
 			fw.loggerMark = fmt.Sprintf("%s-%05d", fw.serverName, fw.tcpCtl.bindPort)
@@ -169,9 +172,6 @@ func (fw *WMFrameWorkV2) Start(opv2 *OptionFrameWorkV2) {
 	}
 	// etcd
 	if opv2.UseETCD != nil {
-		if opv2.UseETCD.SvrName != "" {
-			fw.serverName = opv2.UseETCD.SvrName
-		}
 		if opv2.UseETCD.Activation {
 			go fw.newETCDClient()
 		}

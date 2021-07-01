@@ -31,6 +31,8 @@ var (
 	portable = flag.Bool("portable", false, "把日志，配置，缓存目录创建在当前目录下")
 	// 配置文件
 	conf = flag.String("conf", "", "set the config file path.")
+	// 服务名增加随机字符，用于调试时名称不重复
+	nameTail = flag.String("nametail", "", "Add a string tail after the service name")
 	// 版本信息
 	ver = flag.Bool("version", false, "print version info and exit.")
 	// 帮助信息
