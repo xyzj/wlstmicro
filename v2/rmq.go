@@ -152,6 +152,10 @@ RECV:
 			return
 		}
 		for d := range rcvMQ {
+			f(d.RoutingKey, d.Body)
+			if !fw.Debug() {
+				continue
+			}
 			if gjson.ValidBytes(d.Body) {
 				fw.WriteDebug("MQC", "Debug-R:"+fw.rmqCtl.addr+"|"+d.RoutingKey+"|"+string(d.Body))
 			} else {
@@ -161,7 +165,6 @@ RECV:
 					fw.WriteDebug("MQC", "Debug-R:"+fw.rmqCtl.addr+"|"+d.RoutingKey+"|"+gopsu.PB2String(v6.MsgFromBytes(d.Body, msgproto[0])))
 				}
 			}
-			f(d.RoutingKey, d.Body)
 		}
 	}()
 	time.Sleep(time.Second)
