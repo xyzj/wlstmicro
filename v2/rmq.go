@@ -71,7 +71,7 @@ func (fw *WMFrameWorkV2) loadMQConfig() {
 	fw.rmqCtl.pwd = gopsu.DecodeString(fw.wmConf.GetItemDefault("mq_pwd", "WcELCNqP5dCpvMmMbKDdvgb", "mq连接密码"))
 	fw.rmqCtl.vhost = fw.wmConf.GetItemDefault("mq_vhost", "", "mq虚拟域名")
 	fw.rmqCtl.exchange = fw.wmConf.GetItemDefault("mq_exchange", "luwak_topic", "mq交换机名称")
-	fw.rmqCtl.queueRandom, _ = strconv.ParseBool(fw.wmConf.GetItemDefault("mq_queue_random", "false", "随机队列名，true-用于独占模式，false-负载均衡"))
+	fw.rmqCtl.queueRandom, _ = strconv.ParseBool(fw.wmConf.GetItemDefault("mq_queue_random", "true", "随机队列名，true-用于独占模式，false-负载均衡"))
 	fw.rmqCtl.durable, _ = strconv.ParseBool(fw.wmConf.GetItemDefault("mq_durable", "false", "队列是否持久化"))
 	fw.rmqCtl.autodel, _ = strconv.ParseBool(fw.wmConf.GetItemDefault("mq_autodel", "true", "队列在未使用时是否删除"))
 	fw.rmqCtl.enable, _ = strconv.ParseBool(fw.wmConf.GetItemDefault("mq_enable", "true", "是否启用rabbitmq"))
