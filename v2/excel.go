@@ -2,6 +2,7 @@ package wmv2
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"time"
@@ -38,6 +39,12 @@ func (e *excelData) SetColume(columeName ...string) {
 		cell.SetStyle(e.colStyle)
 		cell.SetString(v)
 	}
+}
+
+// Write 将excel数据写入到writer
+// w： io.writer
+func (e *excelData) Write(w io.Writer) error {
+	return e.xlsxFile.Write(w)
 }
 
 // Save 保存excel数据到文件
